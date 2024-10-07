@@ -3,24 +3,22 @@ import json
 import numpy as np
 import face_recognition
 
-#Je charge la DB
 with open('face_database_structured.json', 'r') as f:
     face_db = json.load(f)
 
-#Normalise l'embedding
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
-# 1 pour ext 0 pour in
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 print("Webcam démarrée")
 
 if not cap.isOpened():
     print("Erreur : Impossible d'accéder à la webcam")
 else:
     frame_counter = 0
-    recognition_interval = 10  #intervale de 10 frames
-    previous_faces = {}  # Stockage des visages identifer précédemment 
+    recognition_interval = 10 
+    previous_faces = {}  
+    face_ids = {}  
 
     while True:
         success, img = cap.read()
@@ -28,7 +26,7 @@ else:
             print("Erreur de lecture de la webcam.")
             break
 
-        # Convertir l'image en RGB & réduire la taille pour accélérer le traitement
+        # Convertir l'image en RGB et réduire la taille pour accélérer le traitement
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         imgS = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
 
@@ -36,52 +34,60 @@ else:
         facesCurFrame = face_recognition.face_locations(imgS)
         encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
 
+        # Associer les visages actuels aux visages précédents
+        current_face_ids = {}
+
         for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
             top, right, bottom, left = faceLoc
+            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  # Ajuster les coordonnées à l'image d'origine
 
-            # Recalculer les coordonnées pour l'image d'origine
-            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
+            # Initialiser les variables de distance minimale et d'identification
+            min_distance = float("inf")
+            identified_person = None
+            current_face_id = None
 
-            # Compteurs d'Intervalle de frames pour la reconnaissance
-            if frame_counter % recognition_interval == 0:
-                min_distance = float("inf")
-                identified_person = None
+            # Comparaison des encodages actuels avec les encodages de la base de données
+            for person, embeddings in face_db.items():
+                for embedding in embeddings:
+                    embedding = normalize(np.array(embedding))
+                    distance = np.linalg.norm(encodeFace - embedding)
 
-                # Comparaison avec la base de donnée
-                print("\n### Comparaison des distances avec la base de données ###")
-                for person, embeddings in face_db.items():
-                    for embedding in embeddings:
-                        embedding = normalize(np.array(embedding))
-                        distance = np.linalg.norm(encodeFace - embedding)
+                    if distance < min_distance:
+                        min_distance = distance
+                        identified_person = person
 
-                        if distance < min_distance:
-                            min_distance = distance
-                            identified_person = person
-
-                # Seuil de distance pour la reconnaissance
-                seuil_facerecognition = 0.6
-                if min_distance < seuil_facerecognition:
-                    print(f"Personne identifiée : {identified_person} avec une distance de : {min_distance}")
-                    confidence = "certain"
-                else:
-                    print(f"Personne identifiée mais avec incertitude : {identified_person} avec une distance de : {min_distance}")
-                    confidence = "incertain"
-                    identified_person = identified_person if identified_person else "Inconnu"
-
-                # Mise à jour des informations précédentes
-                previous_faces[face_index] = (identified_person, confidence)
+            seuil_facerecognition = 0.6
+            if min_distance < seuil_facerecognition:
+                print(f"Personne identifiée : {identified_person} avec une distance de : {min_distance}")
+                confidence = "certain"
             else:
-                identified_person, confidence = previous_faces.get(face_index, ("Inconnu", "incertain"))
+                print(f"Personne détectée mais avec incertitude avec une distance de : {min_distance}")
+                confidence = "incertain"
+                identified_person = "Inconnu"
 
-            # Affichage du cadre et du nom sur l'image
-            if confidence == "certain":
-                color = (0, 255, 0)  # Vert pour une identification certaine
-            else:
-                color = (0, 165, 255)  # Orange pour une identification incertaine
+            # Associer ce visage à un identifiant unique (recherche dans les précédents encodages)
+            for prev_id, (prev_encoding, prev_loc) in previous_faces.items():
+                prev_distance = np.linalg.norm(encodeFace - prev_encoding)
+                if prev_distance < 0.5:  # Seuil pour déterminer si le visage correspond à un visage précédent
+                    current_face_id = prev_id
+                    break
 
-            # Dessiner le rectangle autour du visage
+            # Si le visage actuel ne correspond à aucun visage précédent, créer un nouvel ID
+            if current_face_id is None:
+                current_face_id = len(face_ids) + 1
+                face_ids[current_face_id] = identified_person
+
+            # Mise à jour de l'identification actuelle
+            current_face_ids[current_face_id] = (encodeFace, faceLoc)
+            previous_faces[current_face_id] = (encodeFace, faceLoc)  # Mettre à jour les informations du visage
+
+            # Afficher le cadre et le nom de la personne
+            color = (0, 255, 0) if confidence == "certain" else (0, 165, 255)
             cv2.rectangle(img, (left, top), (right, bottom), color, 2)
-            cv2.putText(img, identified_person, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            cv2.putText(img, f"{identified_person} (ID: {current_face_id})", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
+        # Mise à jour des informations précédentes
+        previous_faces = current_face_ids
 
         frame_counter += 1  # Incrémenter le compteur de frames
 

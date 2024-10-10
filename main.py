@@ -2,42 +2,11 @@ import cv2
 import json
 import numpy as np
 import face_recognition
+import time
+import multiprocessing
 
-with open('face_database_structured.json', 'r') as f:
-    face_db = json.load(f)
-
-def normalize(embedding):
-    return embedding / np.linalg.norm(embedding)
-
-cap = cv2.VideoCapture(0)
-print("Webcam démarrée")
-
-if not cap.isOpened():
-    print("Erreur : Impossible d'accéder à la webcam")
-else:
-    frame_counter = 0
-    recognition_interval = 10 
-    previous_faces = {}  
-    face_ids = {}  
-
-    while True:
-        success, img = cap.read()
-        if not success:
-            print("Erreur de lecture de la webcam.")
-            break
-
-        # Convertir l'image en RGB et réduire la taille pour accélérer le traitement
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        imgS = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
-
-        # Détection des visages et extraction des encodings
-        facesCurFrame = face_recognition.face_locations(imgS)
-        encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
-
-        # Associer les visages actuels aux visages précédents
-        current_face_ids = {}
-
-        for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
+def visageReconosition (args):
+            face_index, encodeFace, faceLoc= args
             top, right, bottom, left = faceLoc
             top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  # Ajuster les coordonnées à l'image d'origine
 
@@ -85,7 +54,77 @@ else:
             color = (0, 255, 0) if confidence == "certain" else (0, 165, 255)
             cv2.rectangle(img, (left, top), (right, bottom), color, 2)
             cv2.putText(img, f"{identified_person} (ID: {current_face_id})", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        
 
+
+
+with open('face_database_structured.json', 'r') as f:
+    face_db = json.load(f)
+
+def normalize(embedding):
+    return embedding / np.linalg.norm(embedding)
+
+cap = cv2.VideoCapture(0)
+print("Webcam démarrée")
+
+if not cap.isOpened():
+    print("Erreur : Impossible d'accéder à la webcam")
+else:
+    frame_counter = 0
+    frame_per_sec = 1
+    previous_faces = {}  
+    face_ids = {}
+    last_capture_time = time.perf_counter()
+    pool =  multiprocessing.Pool(processes=multiprocessing.cpu_count()-1)
+
+    while True:
+
+        # Limiter le nombre de frame par secondes avec du à la boucle while
+        if time.perf_counter() - last_capture_time < 1/frame_per_sec:
+            #print(time.perf_counter() - last_capture_time)
+            continue
+        last_capture_time = time.perf_counter()
+        
+
+        startTime = time.perf_counter()
+
+        success, img = cap.read()
+        if not success:
+            print("Erreur de lecture de la webcam.")
+            break
+
+        # Convertir l'image en RGB et réduire la taille pour accélérer le traitement
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgS = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
+
+        print("traite image " + str(time.perf_counter() - startTime))
+        startTime = time.perf_counter()
+
+
+        # Détection des visages et extraction des encodings
+        facesCurFrame = face_recognition.face_locations(imgS)
+        encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
+
+        print("détection visage " + str(time.perf_counter() - startTime))
+        startTime = time.perf_counter()
+
+        # Associer les visages actuels aux visages précédents
+        current_face_ids = {}
+        
+        
+        
+        task = []
+        
+        
+        for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
+            task.append((face_index, encodeFace, faceLoc))
+        
+        
+        pool.imap_unordered(visageReconosition, task)
+        print(pool._processes)
+
+        print("reconaisance visage " + str(time.perf_counter() - startTime))
+        startTime = time.perf_counter()
         # Mise à jour des informations précédentes
         previous_faces = current_face_ids
 
@@ -95,7 +134,11 @@ else:
         cv2.imshow('Webcam', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        print("end " + str(time.perf_counter() - startTime))
+
+
 
     # Libération des ressources
+    pool.terminate()
     cap.release()
     cv2.destroyAllWindows()

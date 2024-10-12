@@ -2,100 +2,93 @@ import cv2
 import json
 import numpy as np
 import face_recognition
+import time
+import multiprocessing
 
-with open('face_database_structured.json', 'r') as f:
-    face_db = json.load(f)
+def visageReconosition(args):
+    face_index, encodeFace, faceLoc = args
+    top, right, bottom, left = faceLoc
+
+    min_distance = float("inf")
+    identified_person = None
+
+    for person, embeddings in face_db.items():
+        for embedding in embeddings:
+            embedding = normalize(np.array(embedding))
+            distance = np.linalg.norm(encodeFace - embedding)
+
+            if distance < min_distance:
+                min_distance = distance
+                identified_person = person
+
+    seuil_facerecognition = 0.6
+    if min_distance < seuil_facerecognition:
+        color = (0, 255, 0)  
+    else:
+        identified_person = "Inconnu"
+        color = (0, 0, 255) 
+
+    print(f"Personne identifiée : {identified_person}, Distance : {min_distance:.2f}")
+
+    return identified_person, min_distance, faceLoc, color
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
-cap = cv2.VideoCapture(0)
-print("Webcam démarrée")
+with open('face_database_structured.json', 'r') as f:
+    face_db = json.load(f)
 
-if not cap.isOpened():
-    print("Erreur : Impossible d'accéder à la webcam")
-else:
-    frame_counter = 0
-    recognition_interval = 10 
-    previous_faces = {}  
-    face_ids = {}  
+if __name__ == '__main__':
+    multiprocessing.freeze_support()  
 
-    while True:
-        success, img = cap.read()
-        if not success:
-            print("Erreur de lecture de la webcam.")
-            break
+    cap = cv2.VideoCapture(0)
+    print("Webcam démarrée")
 
-        # Convertir l'image en RGB et réduire la taille pour accélérer le traitement
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        imgS = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
+    if not cap.isOpened():
+        print("Erreur : Impossible d'accéder à la webcam")
+    else:
+        pool = multiprocessing.Pool(processes=multiprocessing.cpu_count()-1)
 
-        # Détection des visages et extraction des encodings
-        facesCurFrame = face_recognition.face_locations(imgS)
-        encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
+        process_every_n_frames = 5  
+        frame_count = 0  
 
-        # Associer les visages actuels aux visages précédents
-        current_face_ids = {}
+        while True:
+            success, img = cap.read()
+            if not success:
+                print("Erreur de lecture de la webcam.")
+                break
 
-        for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
-            top, right, bottom, left = faceLoc
-            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  # Ajuster les coordonnées à l'image d'origine
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-            # Initialiser les variables de distance minimale et d'identification
-            min_distance = float("inf")
-            identified_person = None
-            current_face_id = None
+            if frame_count % process_every_n_frames == 0:
+                small_frame = cv2.resize(img_rgb, (0, 0), fx=0.4, fy=0.4)
 
-            # Comparaison des encodages actuels avec les encodages de la base de données
-            for person, embeddings in face_db.items():
-                for embedding in embeddings:
-                    embedding = normalize(np.array(embedding))
-                    distance = np.linalg.norm(encodeFace - embedding)
+                facesCurFrame = face_recognition.face_locations(small_frame)
+                encodesCurFrame = face_recognition.face_encodings(small_frame, facesCurFrame)
 
-                    if distance < min_distance:
-                        min_distance = distance
-                        identified_person = person
+                task = [(face_index, encodeFace, faceLoc) for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame))]
 
-            seuil_facerecognition = 0.6
-            if min_distance < seuil_facerecognition:
-                print(f"Personne identifiée : {identified_person} avec une distance de : {min_distance}")
-                confidence = "certain"
-            else:
-                print(f"Personne détectée mais avec incertitude avec une distance de : {min_distance}")
-                confidence = "incertain"
-                identified_person = "Inconnu"
+                if len(task) > 1:
+                    results = pool.imap_unordered(visageReconosition, task)
+                else:
+                    results = [visageReconosition(task[0])] if task else []
 
-            # Associer ce visage à un identifiant unique (recherche dans les précédents encodages)
-            for prev_id, (prev_encoding, prev_loc) in previous_faces.items():
-                prev_distance = np.linalg.norm(encodeFace - prev_encoding)
-                if prev_distance < 0.5:  # Seuil pour déterminer si le visage correspond à un visage précédent
-                    current_face_id = prev_id
-                    break
+                for result in results:
+                    identified_person, distance, faceLoc, color = result
+                    top, right, bottom, left = faceLoc
 
-            # Si le visage actuel ne correspond à aucun visage précédent, créer un nouvel ID
-            if current_face_id is None:
-                current_face_id = len(face_ids) + 1
-                face_ids[current_face_id] = identified_person
+                    top, right, bottom, left = int(top * 2.5), int(right * 2.5), int(bottom * 2.5), int(left * 2.5)
+                    cv2.rectangle(img, (left, top), (right, bottom), color, 2)  
+                    cv2.putText(img, f"{identified_person} - {distance:.2f}", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
-            # Mise à jour de l'identification actuelle
-            current_face_ids[current_face_id] = (encodeFace, faceLoc)
-            previous_faces[current_face_id] = (encodeFace, faceLoc)  # Mettre à jour les informations du visage
+            cv2.imshow('Webcam', img)
 
-            # Afficher le cadre et le nom de la personne
-            color = (0, 255, 0) if confidence == "certain" else (0, 165, 255)
-            cv2.rectangle(img, (left, top), (right, bottom), color, 2)
-            cv2.putText(img, f"{identified_person} (ID: {current_face_id})", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                print("Quitter...")
+                break
 
-        # Mise à jour des informations précédentes
-        previous_faces = current_face_ids
+            frame_count += 1  
 
-        frame_counter += 1  # Incrémenter le compteur de frames
-
-        # Afficher l'image de la webcam
-        cv2.imshow('Webcam', img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    # Libération des ressources
-    cap.release()
-    cv2.destroyAllWindows()
+        pool.terminate()
+        cap.release()
+        cv2.destroyAllWindows()

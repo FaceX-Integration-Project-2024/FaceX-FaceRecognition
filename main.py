@@ -26,6 +26,7 @@ def visageReconosition(args):
         identified_person = "Inconnu"
         color = (0, 0, 255)
 
+    print(f"Personne identifiée : {identified_person}, Distance : {min_distance:.2f}")
     return identified_person, min_distance, faceLoc, color
 
 def normalize(embedding):
@@ -79,7 +80,7 @@ if __name__ == '__main__':
 
             cv2.imshow('Webcam', img)
 
-            if cv2.waitKey(1) & 0xFF == ord('p'):
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("Quitter...")
                 break
 

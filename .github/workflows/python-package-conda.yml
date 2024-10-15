@@ -1,0 +1,25 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main  # Déclenchement sur un push dans la branche principale
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup SSH Agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Clé privée configurée dans GitHub Secrets
+
+    - name: Deploy to Raspberry Pi
+      run: |
+        ssh pi@<Raspberry_Pi_IP> 'cd /chemin/vers/projet && git pull && ./deploy.sh'
+      env:
+        SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

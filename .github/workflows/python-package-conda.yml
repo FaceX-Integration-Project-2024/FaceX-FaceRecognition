@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Déclenchement lors d'un push sur la branche principale
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,12 +20,14 @@ jobs:
         chmod 600 ~/.ssh/aws_key.pem
 
     - name: Install sshpass
-      run: sudo apt-get install -y sshpass
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y sshpass
 
-    - name: Connect to AWS and Run Python Script on Raspberry Pi
+    - name: Connect to AWS and Manage main.py on Raspberry Pi
       run: |
         echo "Connexion à l'instance AWS"
-        ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
+        ssh -t -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
           echo "Connexion au Raspberry Pi via le tunnel SSH"
-          sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost "cd facexProject/FaceX-FaceRecognition/ && source ../env/bin/activate && python main.py"
+          sshpass -p "project" ssh -t -p 2222 -o StrictHostKeyChecking=no facex@localhost "bash /facexProject/FaceX-FaceRecognition/manage_main.sh"
         EOF

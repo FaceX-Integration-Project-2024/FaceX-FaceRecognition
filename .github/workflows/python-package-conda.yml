@@ -27,16 +27,16 @@ jobs:
     - name: Connect to AWS and Manage main.py on Raspberry Pi
       run: |
         echo "Connexion à l'instance AWS"
-        ssh -t -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
+        ssh -tt -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
           echo "Connexion au Raspberry Pi via le tunnel SSH"
-          sshpass -p "project" ssh -t -p 2222 -o StrictHostKeyChecking=no facex@localhost "
+          sshpass -p "project" ssh -tt -p 2222 -o StrictHostKeyChecking=no facex@localhost "
           # Vérifier et arrêter main.py s'il est en cours d'exécution
-          PID=\$(pgrep -f main.py)
-          if [ -n \"\$PID\" ]; then
-            echo 'Arrêt de main.py (PID: \$PID)...'
-            kill \$PID
+          PID=$(pgrep -f main.py)
+          if [ -z "$PID" ]; then
+              echo "main.py n'est pas en cours d'exécution."
           else
-            echo 'main.py n'est pas en cours d'exécution.'
+              echo "Arrêt de main.py (PID: $PID)..."
+              kill $PID
           fi
 
           # Aller dans le répertoire du projet

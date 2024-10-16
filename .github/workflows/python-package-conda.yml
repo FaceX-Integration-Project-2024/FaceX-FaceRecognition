@@ -3,74 +3,53 @@ name: Deploy to Raspberry Pi
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to main branch
+      - main  # Déclenchement lors d'un push sur la branche principale
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/aws_key.pem
-          chmod 600 ~/.ssh/aws_key.pem
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/aws_key.pem
+        chmod 600 ~/.ssh/aws_key.pem
 
-      - name: Install sshpass
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sshpass
+    - name: Connect to AWS and Manage main.py on Raspberry Pi
+      run: |
+        echo "Connexion à l'instance AWS"
+        ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
+          echo "Connexion au Raspberry Pi via le tunnel SSH"
+          sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost '
+          
+          # Vérifier et arrêter main.py s'il est en cours d'exécution
+          PID=\$(pgrep -f main.py)
+          if [ -z "\$PID" ]; then
+              echo "main.py n est pas en cours d exécution."
+          else
+              echo "Arrêt de main.py (PID: \$PID)..."
+              kill \$PID
+          fi
 
-      - name: Connect to AWS and Manage main.py on Raspberry Pi
-        run: |
-          echo "Connecting to AWS instance..."
-          ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
-            echo "Connecting to Raspberry Pi via SSH tunnel..."
-            sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost << 'EOS'
-              # Check and stop main.py if running
-              PID=$(pgrep -f main.py)
-              if [ -z "$PID" ]; then
-                  echo "main.py is not running."
-              else
-                  echo "Stopping main.py (PID: $PID)..."
-                  kill $PID
-                  if [ $? -eq 0 ]; then
-                      echo "main.py stopped successfully."
-                  else
-                      echo "Failed to stop main.py."
-                      exit 1
-                  fi
-              fi
+          # Aller dans le répertoire du projet
+          cd /home/facex/facexProject/FaceX-FaceRecognition || exit
 
-              # Navigate to project directory
-              if ! cd /home/facex/facexProject/FaceX-FaceRecognition; then
-                  echo "Failed to access project directory."
-                  exit 1
-              fi
+          # Activer l environnement virtuel
+          source ../env/bin/activate || exit
 
-              # Activate virtual environment
-              if ! source ../env/bin/activate; then
-                  echo "Failed to activate virtual environment."
-                  exit 1
-              fi
+          # Mettre à jour le dépôt
+          git pull || exit
 
-              # Update repository
-              if ! git pull; then
-                  echo "Failed to update repository."
-                  exit 1
-              fi
+          # Relancer main.py en arrière-plan
+          echo "Relancer main.py en arrière-plan..."
+          nohup python main.py > output.log 2>&1 &
+          echo "main.py est relancé."
 
-              # Restart main.py in background
-              echo "Restarting main.py in the background..."
-              nohup python main.py > output.log 2>&1 &
-              if [ $? -eq 0 ]; then
-                  echo "main.py restarted successfully."
-              else
-                  echo "Failed to restart main.py."
-                  exit 1
-              fi
-            EOS
-          EOF
+          # Fermer proprement la connexion SSH
+          exit
+          '
+        EOF

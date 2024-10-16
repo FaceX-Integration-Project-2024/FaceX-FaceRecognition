@@ -38,20 +38,31 @@ jobs:
           else
               echo "Arrêt de main.py (PID: $PID)..."
               kill $PID
+              if [ $? -eq 0 ]; then
+                  echo "main.py a été arrêté avec succès."
+              else
+                  echo "Échec de l'arrêt de main.py."
+                  exit 1
+              fi
           fi
 
           # Aller dans le répertoire du projet
-          cd /home/facex/facexProject/FaceX-FaceRecognition || exit
+          cd /home/facex/facexProject/FaceX-FaceRecognition || { echo "Échec de l'accès au répertoire du projet."; exit 1; }
 
           # Activer l environnement virtuel
-          source ../env/bin/activate || exit
+          source ../env/bin/activate || { echo "Échec de l'activation de l'environnement virtuel."; exit 1; }
 
           # Mettre à jour le dépôt
-          git pull || exit
+          git pull || { echo "Échec de la mise à jour du dépôt."; exit 1; }
 
           # Relancer main.py en arrière-plan
           echo "Relancer main.py en arrière-plan..."
           nohup python main.py > output.log 2>&1 &
-          echo "main.py est relancé."
+          if [ $? -eq 0 ]; then
+              echo "main.py est relancé."
+          else
+              echo "Échec du relancement de main.py."
+              exit 1
+          fi
           '
         EOF

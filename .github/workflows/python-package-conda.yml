@@ -30,39 +30,47 @@ jobs:
         ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
           echo "Connexion au Raspberry Pi via le tunnel SSH"
           sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost '
+            # Vérifier et arrêter main.py s'il est en cours d'exécution
+            PID=$(pgrep -f main.py)
+            if [ -z "$PID" ]; then
+                echo "main.py n est pas en cours d exécution."
+            else
+                echo "Arrêt de main.py (PID: $PID)..."
+                kill $PID
+                if [ $? -eq 0 ]; then
+                    echo "main.py a été arrêté avec succès."
+                else
+                    echo "Échec de l'arrêt de main.py."
+                    exit 1
+                fi
+            fi
 
-          # Vérifier et arrêter main.py s'il est en cours d'exécution
-          PID=$(pgrep -f main.py)
-          if [ -z "$PID" ]; then
-              echo "main.py n est pas en cours d exécution."
-          else
-              echo "Arrêt de main.py (PID: $PID)..."
-              kill $PID
-              if [ $? -eq 0 ]; then
-                  echo "main.py a été arrêté avec succès."
-              else
-                  echo "Échec de l'arrêt de main.py."
-                  exit 1
-              fi
-          fi
+            # Aller dans le répertoire du projet
+            if ! cd /home/facex/facexProject/FaceX-FaceRecognition; then
+                echo "Échec de l'accès au répertoire du projet."
+                exit 1
+            fi
 
-          # Aller dans le répertoire du projet
-          cd /home/facex/facexProject/FaceX-FaceRecognition || { echo "Échec de l'accès au répertoire du projet."; exit 1; }
+            # Activer l environnement virtuel
+            if ! source ../env/bin/activate; then
+                echo "Échec de l'activation de l'environnement virtuel."
+                exit 1
+            fi
 
-          # Activer l environnement virtuel
-          source ../env/bin/activate || { echo "Échec de l'activation de l'environnement virtuel."; exit 1; }
+            # Mettre à jour le dépôt
+            if ! git pull; then
+                echo "Échec de la mise à jour du dépôt."
+                exit 1
+            fi
 
-          # Mettre à jour le dépôt
-          git pull || { echo "Échec de la mise à jour du dépôt."; exit 1; }
-
-          # Relancer main.py en arrière-plan
-          echo "Relancer main.py en arrière-plan..."
-          nohup python main.py > output.log 2>&1 &
-          if [ $? -eq 0 ]; then
-              echo "main.py est relancé."
-          else
-              echo "Échec du relancement de main.py."
-              exit 1
-          fi
+            # Relancer main.py en arrière-plan
+            echo "Relancer main.py en arrière-plan..."
+            nohup python main.py > output.log 2>&1 &
+            if [ $? -eq 0 ]; then
+                echo "main.py est relancé."
+            else
+                echo "Échec du relancement de main.py."
+                exit 1
+            fi
           '
         EOF

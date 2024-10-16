@@ -23,6 +23,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y sshpass
+
     - name: Connect to AWS and Manage main.py on Raspberry Pi
       run: |
         echo "Connexion à l'instance AWS"
@@ -54,4 +55,5 @@ jobs:
           echo "main.py est relancé."
           '
         EOF
+
 

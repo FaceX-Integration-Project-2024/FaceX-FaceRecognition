@@ -3,7 +3,7 @@ name: Deploy to Raspberry Pi
 on:
   push:
     branches:
-      - main  # Déclenchement sur un push dans la branche principale
+      - main  # Déclenchement lors d'un push sur la branche principale
 
 jobs:
   deploy:
@@ -13,13 +13,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Clé privée configurée dans GitHub Secrets
-
-    - name: Deploy to Raspberry Pi
+    - name: Setup SSH
       run: |
-        ssh pi@<Raspberry_Pi_IP> 'cd /chemin/vers/projet && git pull && ./deploy.sh'
-      env:
-        SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AWS_SSH_KEY }}" > ~/.ssh/aws_key.pem
+        chmod 600 ~/.ssh/aws_key.pem
+
+    - name: Connect to AWS and Run Python Script on Raspberry Pi
+      run: |
+        echo "Connexion à l'instance AWS"
+        ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
+          echo "Connexion au Raspberry Pi via le tunnel SSH"
+          ssh -p 2222 facex@localhost "cd facexProject/FaceX-FaceRecognition/ && source ../env/bin/activate && python main.py"
+        EOF

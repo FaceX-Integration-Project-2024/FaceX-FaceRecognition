@@ -23,34 +23,35 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y sshpass
-
     - name: Connect to AWS and Manage main.py on Raspberry Pi
       run: |
         echo "Connexion à l'instance AWS"
-        ssh -tt -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
+        ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
           echo "Connexion au Raspberry Pi via le tunnel SSH"
-          sshpass -p "project" ssh -tt -p 2222 -o StrictHostKeyChecking=no facex@localhost "
+          sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost '
+          
           # Vérifier et arrêter main.py s'il est en cours d'exécution
           PID=\$(pgrep -f main.py)
-          if [ -z \"\$PID\" ]; then
-            echo 'main.py n'est pas en cours d'exécution.'
+          if [ -z "\$PID" ]; then
+              echo "main.py n est pas en cours d exécution."
           else
-            echo 'Arrêt de main.py (PID: \$PID)...'
-            kill \$PID
+              echo "Arrêt de main.py (PID: \$PID)..."
+              kill \$PID
           fi
 
           # Aller dans le répertoire du projet
           cd /home/facex/facexProject/FaceX-FaceRecognition || exit
 
-          # Activer l'environnement virtuel
+          # Activer l environnement virtuel
           source ../env/bin/activate || exit
 
           # Mettre à jour le dépôt
           git pull || exit
 
           # Relancer main.py en arrière-plan
-          echo 'Relancer main.py en arrière-plan...'
+          echo "Relancer main.py en arrière-plan..."
           nohup python main.py > output.log 2>&1 &
-          echo 'main.py est relancé.'
-          "
+          echo "main.py est relancé."
+          '
         EOF
+

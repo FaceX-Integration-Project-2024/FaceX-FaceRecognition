@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main  # Déclenchement lors d'un push sur la branche principale
-
 jobs:
   deploy:
     runs-on: ubuntu-latest

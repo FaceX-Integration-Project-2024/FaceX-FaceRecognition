@@ -27,9 +27,9 @@ jobs:
       - name: Connect to AWS and Manage main.py on Raspberry Pi
         run: |
           echo "Connecting to AWS instance..."
-          ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com <<EOF
+          ssh -i ~/.ssh/aws_key.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-61-21-51.eu-north-1.compute.amazonaws.com << 'EOF'
             echo "Connecting to Raspberry Pi via SSH tunnel..."
-            sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost <<EOS
+            sshpass -p "project" ssh -p 2222 -o StrictHostKeyChecking=no facex@localhost << 'EOS'
               # Check and stop main.py if running
               PID=$(pgrep -f main.py)
               if [ -z "$PID" ]; then
@@ -72,5 +72,5 @@ jobs:
                   echo "Failed to restart main.py."
                   exit 1
               fi
-EOS
-EOF
+            EOS
+          EOF

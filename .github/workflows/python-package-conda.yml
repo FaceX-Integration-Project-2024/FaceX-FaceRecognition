@@ -40,7 +40,7 @@ jobs:
           fi
 
           # Aller dans le répertoire du projet
-          cd facexProject/FaceX-FaceRecognition/
+          cd /home/facex/facexProject/FaceX-FaceRecognition/
 
           # Activer l'environnement virtuel
           source ../env/bin/activate

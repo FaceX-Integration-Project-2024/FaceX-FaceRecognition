@@ -31,22 +31,22 @@ jobs:
           echo "Connexion au Raspberry Pi via le tunnel SSH"
           sshpass -p "project" ssh -tt -p 2222 -o StrictHostKeyChecking=no facex@localhost "
           # Vérifier et arrêter main.py s'il est en cours d'exécution
-          PID=$(pgrep -f main.py)
-          if [ -z "$PID" ]; then
-              echo "main.py n'est pas en cours d'exécution."
+          PID=\$(pgrep -f main.py)
+          if [ -z \"\$PID\" ]; then
+            echo 'main.py n'est pas en cours d'exécution.'
           else
-              echo "Arrêt de main.py (PID: $PID)..."
-              kill $PID
+            echo 'Arrêt de main.py (PID: \$PID)...'
+            kill \$PID
           fi
 
           # Aller dans le répertoire du projet
-          cd /home/facex/facexProject/FaceX-FaceRecognition/
+          cd /home/facex/facexProject/FaceX-FaceRecognition || exit
 
           # Activer l'environnement virtuel
-          source ../env/bin/activate
+          source ../env/bin/activate || exit
 
           # Mettre à jour le dépôt
-          git pull
+          git pull || exit
 
           # Relancer main.py en arrière-plan
           echo 'Relancer main.py en arrière-plan...'

@@ -1,10 +1,23 @@
 import cv2
-import json
 import numpy as np
 import face_recognition
+from supabase import create_client, Client
+import os
+from dotenv import load_dotenv
 
-with open('face_database_structured.json', 'r') as f:
-    face_db = json.load(f)
+
+# récuperer les variables d'environement
+load_dotenv()
+
+DB_url = os.getenv('DB_URL')
+DB_key = os.getenv('DB_KEY')
+
+# récuperer les étudiants qui ont actuellement classe
+supabase: Client = create_client(DB_url, DB_key)
+reponse = supabase.rpc("get_students_face_data_for_active_classes").execute()
+face_db = reponse.data
+
+
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)

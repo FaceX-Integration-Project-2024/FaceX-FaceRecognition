@@ -11,11 +11,18 @@ load_dotenv()
 
 DB_url = os.getenv('DB_URL')
 DB_key = os.getenv('DB_KEY')
+local = os.getenv('LOCAL')
+
 
 # récuperer les étudiants qui ont actuellement classe
 supabase: Client = create_client(DB_url, DB_key)
-reponse = supabase.rpc("get_students_face_data_for_active_classes").execute()
-face_db = reponse.data
+reponse = supabase.rpc("get_active_class_students_face_data", {"local_now":"L217"}).execute()
+
+block_id = reponse.data["block_id"]
+face_db = reponse.data["students"]
+print(f"Vous etes dans le local : {local} avec un course_id : {block_id}")
+
+
 
 
 
@@ -30,8 +37,8 @@ if not cap.isOpened():
 else:
     frame_counter = 0
     recognition_interval = 10 
-    previous_faces = {}  
-    face_ids = {}  
+    previous_faces = {}
+    face_ids = {}
 
     while True:
         success, img = cap.read()

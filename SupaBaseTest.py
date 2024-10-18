@@ -17,21 +17,25 @@ reponse = supabase.rpc("get_active_class_students_face_data", {"local_now":"L217
 print(reponse.data["block_id"])
 print(reponse.data["students"])
 
+def postStudentAttendanceDB(student_email: str ,block_id: int, timestamp: str = datetime.now(timezone.utc).isoformat() , status: str ='Present'):
+    try:
+        # Envois la présence de l'étudiant dans DB 
+        response = supabase.rpc('post_new_attendance', {
+            "attendance_student_email": student_email,
+            "attendance_block_id": block_id,
+            "attendance_status": status,
+            "attendance_timestamp": timestamp
+        }).execute()
 
-try:
-    # Envois la présence de l'étudiant dans DB 
-    response = supabase.rpc('insert_new_attendance', {
-        "attendance_student_email": student_email,
-        "attendance_block_id": block_id,
-        "attendance_status": status,
-        "attendance_timestamp": timestamp
-    }).execute()
+        # véfirie le retours de la DB (true/false)
+        if response.data:
+            print(f"l'étudants {student_email} à bien été enregistré sur le block_ID N°{block_id}")
+        else:
+            print(f"L'étudiant {student_email} à déja été enregistré sur le block_ID N°{block_id}")
 
-    # véfirie le retours de la DB
-    if response.data:
-        print(f"l'étudants {student_email} à bien été enregistré sur le block_ID N°{block_id}")
-    else:
-        print(f"L'étudiant {student_email} à déja été enregistré sur le block_ID N°{block_id}")
+    except Exception as e:
+        print(f"Erreur dans l'envois des Attendence dans la DB: {e}")
 
-except Exception as e:
-    print(f"An error occurred: {e}")
+
+
+postStudentAttendanceDB('gaetan.carbonnelle1@gmail.com', 2 )

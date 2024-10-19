@@ -7,3 +7,4 @@ python -m venv env
 pip install -r requirements.txt
 ```
 Puis lancez `py main.py`, souriez vous êtes filmé ! 
+

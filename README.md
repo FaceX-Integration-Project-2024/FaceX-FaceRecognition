@@ -1,5 +1,5 @@
 # FaceX-FaceRecognition
-Pour faire tourner le programme vous avez besoin du json, du main.py et du requirements.txt. 
+Pour faire tourner le programme vous avez besoin du .env, du main.py et du requirements.txt. 
 Dans votre dossier ou se trouvent les trois fichier faite : 
 ```
 python -m venv env

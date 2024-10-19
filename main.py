@@ -1,13 +1,77 @@
+import os
 import cv2
-import json
 import numpy as np
 import face_recognition
+from supabase import create_client, Client
+from dotenv import load_dotenv
+from datetime import datetime, timezone
 
-with open('face_database_structured.json', 'r') as f:
-    face_db = json.load(f)
+
+
+def postStudentAttendanceDB(student_email: str ,block_id: int, timestamp: str = None , status: str ='Present'):
+    """
+    Envoie la présence d'un étudiant pour un bloc spécifique à la base de données.
+    """
+
+    # Met heure actuelle si aucune heure est spécifier
+    if timestamp is None:
+            timestamp = datetime.now(timezone.utc).isoformat()
+    
+    try:
+        # Envois la présence de l'étudiant dans DB 
+        response = supabase.rpc('post_new_attendance', {
+            "attendance_student_email": student_email,
+            "attendance_block_id": block_id,
+            "attendance_status": status,
+            "attendance_timestamp": timestamp
+        }).execute()
+
+        # véfirie le retours de la DB (true/false)
+        if response.data:
+            print(f"l'étudants {student_email} à bien été enregistré sur le block_ID N°{block_id}")
+        else:
+            print(f"L'étudiant {student_email} à déja été enregistré sur le block_ID N°{block_id}")
+
+    except Exception as e:
+        print(f"Erreur dans l'envois des Attendence dans la DB: {e}")
+
+
+def getActiveClassStudentsFaceData(local) :
+    """
+    Récupere les données (face_data) des étudiants qui ont cours dans la classe donnée 
+    """ 
+
+    # récuperer les étudiants qui ont actuellement classe
+    try :
+        reponse = supabase.rpc("get_active_class_students_face_data", {"local_now":local}).execute()
+        return reponse.data["block_id"], reponse.data["students"]
+    
+    except Exception as e:
+        print(f"Erreur dans la récupération des données (face_data) depuis la DB : {e}")
+
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
+
+
+
+
+
+# Récuperer les variables d'environement
+load_dotenv()
+DB_URL = os.getenv('DB_URL')
+DB_KEY = os.getenv('DB_KEY')
+LOCAL = os.getenv('LOCAL')
+
+
+# Initialise conneciton DB
+supabase: Client = create_client(DB_URL, DB_KEY)
+
+
+# Get étudiants info + block_id depuis DB
+block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
+print(f"Vous etes dans le local : {LOCAL} avec un course_id : {block_id}")
+
 
 cap = cv2.VideoCapture(0)
 print("Webcam démarrée")
@@ -17,8 +81,8 @@ if not cap.isOpened():
 else:
     frame_counter = 0
     recognition_interval = 10 
-    previous_faces = {}  
-    face_ids = {}  
+    previous_faces = {}
+    face_ids = {}
 
     while True:
         success, img = cap.read()
@@ -74,6 +138,10 @@ else:
             previous_faces[current_face_id] = (encodeFace, faceLoc)  # Mettre à jour les informations du visage
 
             print(f"ID: {current_face_id}, Personne: {identified_person}, Confiance: {confidence}")
+            
+            # envois à la DB 
+            if identified_person != "Inconnu" :
+                postStudentAttendanceDB(identified_person, block_id)
 
             # ### Code pour l'affichage graphique - Désactivé pour Raspberry Pi ###
             # color = (0, 255, 0) if confidence == "certain" else (0, 165, 255)

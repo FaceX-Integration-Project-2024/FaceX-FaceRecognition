@@ -4,73 +4,113 @@ import numpy as np
 import face_recognition
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
-
-
-def postStudentAttendanceDB(student_email: str ,block_id: int, timestamp: str = None , status: str ='Present'):
+# Fonction pour envoyer la présence à la DB
+def postStudentAttendanceDB(student_email: str, block_id: int, timestamp: str = None, status: str = 'Present'):
     """
     Envoie la présence d'un étudiant pour un bloc spécifique à la base de données.
     """
-
-    # Met heure actuelle si aucune heure est spécifier
     if timestamp is None:
-            timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
     
     try:
-        # Envois la présence de l'étudiant dans DB 
+        # Convertir le block_id en int pour compatibilité avec bigint
         response = supabase.rpc('post_new_attendance', {
             "attendance_student_email": student_email,
-            "attendance_block_id": block_id,
+            "attendance_block_id": int(block_id),  # conversion ici
             "attendance_status": status,
             "attendance_timestamp": timestamp
         }).execute()
 
-        # véfirie le retours de la DB (true/false)
         if response.data:
-            print(f"l'étudants {student_email} à bien été enregistré sur le block_ID N°{block_id}")
+            print(f"L'étudiant {student_email} a bien été enregistré sur le block_ID N°{block_id}")
         else:
-            print(f"L'étudiant {student_email} à déja été enregistré sur le block_ID N°{block_id}")
+            print(f"L'étudiant {student_email} a déjà été enregistré sur le block_ID N°{block_id}")
 
     except Exception as e:
-        print(f"Erreur dans l'envois des Attendence dans la DB: {e}")
+        print(f"Erreur lors de l'envoi des présences dans la DB : {e}")
 
 
-def getActiveClassStudentsFaceData(local) :
+
+
+# Fonction pour récupérer les données des étudiants pour une classe donnée
+def getActiveClassStudentsFaceData(local):
     """
-    Récupere les données (face_data) des étudiants qui ont cours dans la classe donnée 
-    """ 
-
-    # récuperer les étudiants qui ont actuellement classe
-    try :
-        reponse = supabase.rpc("get_active_class_students_face_data", {"local_now":local}).execute()
-        return reponse.data["block_id"], reponse.data["students"]
+    Récupère les données (face_data) des étudiants qui ont cours dans la classe donnée
+    """
+    try:
+        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()
+        return response.data["block_id"], response.data["students"]
     
     except Exception as e:
         print(f"Erreur dans la récupération des données (face_data) depuis la DB : {e}")
+
+def getAttendanceForBlock(class_block_id):
+    """
+    Récupère les présences déjà enregistrées pour un class_block_id donné.
+    """
+    try:
+        # Convertir le block_id en int pour compatibilité
+        response = supabase.rpc("get_attendance_for_class_block_python", {"class_block_id": int(class_block_id)}).execute()        
+        if response.data:
+            # S'assurer que les identifiants sont bien convertis
+            return {attendance['student_email'] for attendance in response.data}
+        else:
+            return set()
+    except Exception as e:
+        print(f"Erreur lors de la récupération des présences pour le class_block_id {class_block_id} : {e}")
+        return set()
+
+
+
+
+# Fonction pour vérifier le changement de bloc
+def checkForBlockChange(current_block_id, local):
+    """
+    Vérifie si le bloc de cours a changé.
+    """
+    new_block_id, _ = getActiveClassStudentsFaceData(local)
+    if new_block_id != current_block_id:
+        print(f"Le bloc de cours a changé de {current_block_id} à {new_block_id}.")
+        return new_block_id
+    return current_block_id
+
+
+# Fonction pour rafraîchir les présences à intervalle régulier
+def refreshAttendanceForBlock(block_id, refresh_interval_minutes=5):
+    """
+    Rafraîchit les présences pour un block_id donné toutes les 'refresh_interval_minutes'.
+    """
+    now = datetime.now()
+    if now - refreshAttendanceForBlock.last_refresh_time > timedelta(minutes=refresh_interval_minutes):
+        refreshAttendanceForBlock.last_refresh_time = now
+        return getAttendanceForBlock(block_id)  # Requête à la base de données pour récupérer les présences mises à jour
+    return None
+
+# Initialiser la dernière vérification de rafraîchissement
+refreshAttendanceForBlock.last_refresh_time = datetime.now() - timedelta(minutes=6)  # Forcer le premier rafraîchissement immédiatement
 
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
 
-
-
-
-# Récuperer les variables d'environement
+# Charger les variables d'environnement
 load_dotenv()
 DB_URL = os.getenv('DB_URL')
 DB_KEY = os.getenv('DB_KEY')
 LOCAL = os.getenv('LOCAL')
 
-
-# Initialise conneciton DB
+# Initialiser la connexion DB
 supabase: Client = create_client(DB_URL, DB_KEY)
 
-
-# Get étudiants info + block_id depuis DB
+# Récupérer les infos des étudiants et block_id depuis la DB
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
-print(f"Vous etes dans le local : {LOCAL} avec un course_id : {block_id}")
+print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")
+
+# Récupérer les présences existantes pour le class_block_id
+existing_attendance = getAttendanceForBlock(block_id)
 
 
 cap = cv2.VideoCapture(0)
@@ -80,11 +120,26 @@ if not cap.isOpened():
     print("Erreur : Impossible d'accéder à la webcam")
 else:
     frame_counter = 0
-    recognition_interval = 10 
+    recognition_interval = 10
     previous_faces = {}
     face_ids = {}
+    detection_timestamps = {}
+    block_change_check_interval = timedelta(minutes=5)  # Vérification du changement de bloc toutes les 5 minutes
+    last_block_check_time = datetime.now()
 
     while True:
+        # Vérifier si le bloc de cours a changé toutes les 5 minutes
+        if datetime.now() - last_block_check_time > block_change_check_interval:
+            block_id = checkForBlockChange(block_id, LOCAL)
+            existing_attendance = getAttendanceForBlock(block_id)
+            last_block_check_time = datetime.now()
+
+        # Rafraîchir les présences si nécessaire
+        updated_attendance = refreshAttendanceForBlock(block_id)
+        if updated_attendance is not None:
+            existing_attendance = updated_attendance
+            print(f"Les présences pour le block {block_id} ont été rafraîchies.")
+
         success, img = cap.read()
         if not success:
             print("Erreur de lecture de la webcam.")
@@ -100,7 +155,7 @@ else:
 
         for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
             top, right, bottom, left = faceLoc
-            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2  
+            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
 
             min_distance = float("inf")
             identified_person = None
@@ -124,36 +179,16 @@ else:
                 confidence = "incertain"
                 identified_person = "Inconnu"
 
-            for prev_id, (prev_encoding, prev_loc) in previous_faces.items():
-                prev_distance = np.linalg.norm(encodeFace - prev_encoding)
-                if prev_distance < 0.5: 
-                    current_face_id = prev_id
-                    break
-
-            if current_face_id is None:
-                current_face_id = len(face_ids) + 1
-                face_ids[current_face_id] = identified_person
-
-            current_face_ids[current_face_id] = (encodeFace, faceLoc)
-            previous_faces[current_face_id] = (encodeFace, faceLoc)  # Mettre à jour les informations du visage
-
-            print(f"ID: {current_face_id}, Personne: {identified_person}, Confiance: {confidence}")
-            
-            # envois à la DB 
-            if identified_person != "Inconnu" :
+            # Vérifier si la personne a déjà été enregistrée pour ce block
+            if identified_person != "Inconnu" and identified_person not in existing_attendance:
                 postStudentAttendanceDB(identified_person, block_id)
+                existing_attendance.add(identified_person)  # Mettre à jour localement
+            else:
+                print(f"{identified_person} a déjà été enregistré pour ce bloc.")
 
-            # ### Code pour l'affichage graphique - Désactivé pour Raspberry Pi ###
-            # color = (0, 255, 0) if confidence == "certain" else (0, 165, 255)
-            # cv2.rectangle(img, (left, top), (right, bottom), color, 2)
-            # cv2.putText(img, f"{identified_person} (ID: {current_face_id})", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        frame_counter += 1
 
-        previous_faces = current_face_ids
-
-        frame_counter += 1  #
-
-        # ### Affichage de l'image désactivé pour Raspberry Pi ###
-        # cv2.imshow('Webcam', img)
+        # Quitter la boucle si 'q' est pressé
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

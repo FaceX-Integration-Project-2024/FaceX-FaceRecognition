@@ -73,6 +73,21 @@ def checkForBlockChange(current_block_id, local):
     return current_block_id
 
 
+# Fonction pour rafraîchir les présences à intervalle régulier
+def refreshAttendanceForBlock(block_id, refresh_interval_minutes=5):
+    """
+    Rafraîchit les présences pour un block_id donné toutes les 'refresh_interval_minutes'.
+    """
+    now = datetime.now()
+    if now - refreshAttendanceForBlock.last_refresh_time > timedelta(minutes=refresh_interval_minutes):
+        refreshAttendanceForBlock.last_refresh_time = now
+        return getAttendanceForBlock(block_id)  # Requête à la base de données pour récupérer les présences mises à jour
+    return None
+
+# Initialiser la dernière vérification de rafraîchissement
+refreshAttendanceForBlock.last_refresh_time = datetime.now() - timedelta(minutes=6)  # Forcer le premier rafraîchissement immédiatement
+
+
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
@@ -113,6 +128,12 @@ else:
             block_id = checkForBlockChange(block_id, LOCAL)
             existing_attendance = getAttendanceForBlock(block_id)
             last_block_check_time = datetime.now()
+
+        # Rafraîchir les présences si nécessaire
+        updated_attendance = refreshAttendanceForBlock(block_id)
+        if updated_attendance is not None:
+            existing_attendance = updated_attendance
+            print(f"Les présences pour le block {block_id} ont été rafraîchies.")
 
         success, img = cap.read()
         if not success:

@@ -47,19 +47,21 @@ def getActiveClassStudentsFaceData(local):
 
 
 # Fonction pour récupérer les présences déjà enregistrées pour un bloc donné
-def getAttendanceForBlock(block_id):
+def getAttendanceForBlock(class_block_id):
     """
-    Récupère les présences déjà enregistrées pour un block_id donné.
+    Récupère les présences déjà enregistrées pour un class_block_id donné.
     """
     try:
-        response = supabase.rpc("get_attendance_for_block", {"block_id": block_id}).execute()
+        # Appeler la procédure avec le bon nom de paramètre
+        response = supabase.rpc("get_attendance_for_class_block", {"class_block_id": class_block_id}).execute()
         if response.data:
             return {attendance['student_email'] for attendance in response.data}
         else:
             return set()
     except Exception as e:
-        print(f"Erreur lors de la récupération des présences pour le block {block_id} : {e}")
+        print(f"Erreur lors de la récupération des présences pour le class_block_id {class_block_id} : {e}")
         return set()
+
 
 # Fonction pour vérifier le changement de bloc
 def checkForBlockChange(current_block_id, local):
@@ -105,8 +107,9 @@ supabase: Client = create_client(DB_URL, DB_KEY)
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
 print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")
 
-# Récupérer les présences existantes pour le block_id
+# Récupérer les présences existantes pour le class_block_id
 existing_attendance = getAttendanceForBlock(block_id)
+
 
 cap = cv2.VideoCapture(0)
 print("Webcam démarrée")

@@ -15,15 +15,14 @@ def postStudentAttendanceDB(student_email: str, block_id: int, timestamp: str = 
         timestamp = datetime.now(timezone.utc).isoformat()
     
     try:
-        # Envoie la présence de l'étudiant à la DB
+        # Convertir le block_id en int pour compatibilité avec bigint
         response = supabase.rpc('post_new_attendance', {
             "attendance_student_email": student_email,
-            "attendance_block_id": block_id,
+            "attendance_block_id": int(block_id),  # conversion ici
             "attendance_status": status,
             "attendance_timestamp": timestamp
         }).execute()
 
-        # Vérifie le retour de la DB (true/false)
         if response.data:
             print(f"L'étudiant {student_email} a bien été enregistré sur le block_ID N°{block_id}")
         else:
@@ -31,6 +30,8 @@ def postStudentAttendanceDB(student_email: str, block_id: int, timestamp: str = 
 
     except Exception as e:
         print(f"Erreur lors de l'envoi des présences dans la DB : {e}")
+
+
 
 
 # Fonction pour récupérer les données des étudiants pour une classe donnée
@@ -45,22 +46,23 @@ def getActiveClassStudentsFaceData(local):
     except Exception as e:
         print(f"Erreur dans la récupération des données (face_data) depuis la DB : {e}")
 
-
-# Fonction pour récupérer les présences déjà enregistrées pour un bloc donné
 def getAttendanceForBlock(class_block_id):
     """
     Récupère les présences déjà enregistrées pour un class_block_id donné.
     """
     try:
-        # Appeler la procédure avec le bon nom de paramètre
-        response = supabase.rpc("get_attendance_for_class_block", {"class_block_id": class_block_id}).execute()
+        # Convertir le block_id en int pour compatibilité
+        response = supabase.rpc("get_attendance_for_class_block", {"class_block_id": int(class_block_id)}).execute()
         if response.data:
+            # S'assurer que les identifiants sont bien convertis
             return {attendance['student_email'] for attendance in response.data}
         else:
             return set()
     except Exception as e:
         print(f"Erreur lors de la récupération des présences pour le class_block_id {class_block_id} : {e}")
         return set()
+
+
 
 
 # Fonction pour vérifier le changement de bloc

@@ -52,7 +52,7 @@ def getAttendanceForBlock(class_block_id):
     """
     try:
         # Convertir le block_id en int pour compatibilité
-        response = supabase.rpc("get_attendance_for_class_block", {"class_block_id": int(class_block_id)}).execute()
+        response = supabase.rpc("get_attendance_for_class_block_python", {"class_block_id": int(class_block_id)}).execute()        
         if response.data:
             # S'assurer que les identifiants sont bien convertis
             return {attendance['student_email'] for attendance in response.data}

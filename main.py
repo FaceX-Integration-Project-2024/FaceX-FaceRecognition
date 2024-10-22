@@ -105,6 +105,8 @@ LOCAL = os.getenv('LOCAL')
 # Initialiser la connexion DB
 supabase: Client = create_client(DB_URL, DB_KEY)
 
+
+
 # Récupérer les infos des étudiants et block_id depuis la DB
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
 print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")

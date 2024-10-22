@@ -61,6 +61,25 @@ def studentsImgToFaceData(supabase: Client, studentsEmail: str):
         print("Aucun encodage trouvé pour cet étudiant.")
 
 
+
+def UpdateAllFaceData (supabase : Client) :
+    """
+    update dans la DB toutes les face_data des users étudiants à partir de leur image qui se trouve dans le bucket
+    """
+    reponse = supabase.rpc("get_all_users").execute()
+    #print(reponse.data)
+
+    for i in reponse.data:
+        if i["role"] == "student" :
+            print("Au tour de : " + i["email"])
+            faceData = [studentsImgToFaceData(supabase, i["email"])]
+            response = supabase.rpc('update_face_data',{
+                "user_email": i["email"],
+                "new_face_data": faceData
+            }).execute()
+
+
+
 # Chargement des variables d'environnement
 load_dotenv()
 DB_URL = os.getenv('DB_URL')
@@ -69,5 +88,5 @@ LOCAL = os.getenv('LOCAL')
 
 supabase: Client = create_client(DB_URL, DB_KEY)
 
-
-print(studentsImgToFaceData(supabase,'gaetan.carbonnelle1@gmail.com'))
+UpdateAllFaceData(supabase)
+# print(studentsImgToFaceData(supabase,'gaetan.carbonnelle1@gmail.com'))

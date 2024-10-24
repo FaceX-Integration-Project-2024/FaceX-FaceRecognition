@@ -2,3 +2,4 @@ env
 known_faces
 .env
 .idea
+__pycache__

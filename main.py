@@ -5,6 +5,30 @@ import face_recognition
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
+from utils import UpdateOneFaceData
+
+
+def checkFaceDataValidity(person, embedding) :
+    """"
+    Vérifie que la face data est correcte si non, renvoir la nouvelle face_Data genérer. si ok renvois True
+    """
+
+    # Vérifie que tous les éléments sont des nombres
+    if not np.issubdtype(embedding.dtype, np.number):
+        print(f"Face data de {person} à un soucis")
+        # tente de update
+        faceData = UpdateOneFaceData(supabase, person)
+        return faceData
+
+    # Vérifie la longueur de l'embedding (attendu : 128)
+    if len(embedding) != 128:  # Changez ici si nécessaire
+        print(f"Face data de {person} à un soucis {len(embedding)}. Attendu : 128.")
+        # tente de update
+        faceData = UpdateOneFaceData(supabase, person)
+        return faceData 
+    return True
+
+
 
 # Fonction pour envoyer la présence à la DB
 def postStudentAttendanceDB(student_email: str, block_id: int, timestamp: str = None, status: str = 'Present'):
@@ -166,8 +190,16 @@ else:
             for person, embeddings in face_db.items():
                 for embedding in embeddings:
                     embedding = normalize(np.array(embedding))
-                    distance = np.linalg.norm(encodeFace - embedding)
 
+                    # si erreur dans face data, il l'update
+                    try : 
+                        distance = np.linalg.norm(encodeFace - embedding)
+                    except :
+                        face_db[person] = checkFaceDataValidity(person, embedding)
+
+                        
+                    
+                    
                     if distance < min_distance:
                         min_distance = distance
                         identified_person = person

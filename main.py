@@ -12,6 +12,12 @@ def checkFaceDataValidity(person, embedding) :
     """"
     Vérifie que la face data est correcte si non, renvoir la nouvelle face_Data genérer. si ok renvois True
     """
+    
+    try :
+        embedding = np.array(embedding)
+    except :
+        faceData = UpdateOneFaceData(supabase, person)
+        return faceData
 
     # Vérifie que tous les éléments sont des nombres
     if not np.issubdtype(embedding.dtype, np.number):
@@ -27,6 +33,8 @@ def checkFaceDataValidity(person, embedding) :
         faceData = UpdateOneFaceData(supabase, person)
         return faceData 
     return True
+    
+
 
 
 
@@ -64,7 +72,7 @@ def getActiveClassStudentsFaceData(local):
     Récupère les données (face_data) des étudiants qui ont cours dans la classe donnée
     """
     try:
-        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()
+        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()        
         return response.data["block_id"], response.data["students"]
     
     except Exception as e:
@@ -134,6 +142,15 @@ supabase: Client = create_client(DB_URL, DB_KEY)
 # Récupérer les infos des étudiants et block_id depuis la DB
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
 print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")
+
+# Check que lesface Data soit juste 
+for i in face_db :
+
+    try :
+        checkFaceDataValidity(i, face_db[i][0])
+    except :
+        faceData = UpdateOneFaceData(supabase, i)
+
 
 # Récupérer les présences existantes pour le class_block_id
 existing_attendance = getAttendanceForBlock(block_id)

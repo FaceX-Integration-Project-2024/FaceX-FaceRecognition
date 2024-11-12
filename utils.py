@@ -79,5 +79,24 @@ def UpdateAllFaceData (supabase : Client) :
             }).execute()
 
 
+def UpdateOneFaceData (supabase : Client, email) :
+    """
+    update dans la DB une seul face_data à partir de l'email de étudiant
+    """
+    print(f"update de la photo de : {email} sur base de celle dans la DB")
+
+    faceData = [studentsImgToFaceData(supabase, email)]
+    response = supabase.rpc('update_face_data',{
+        "user_email": email,
+        "new_face_data": faceData
+    }).execute()
+
+    print(f"update fini pour la face_data de : {email}")
+
+    return faceData
+
+
+
+
 
 

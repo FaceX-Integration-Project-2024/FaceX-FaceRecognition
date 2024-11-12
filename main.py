@@ -5,6 +5,52 @@ import face_recognition
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
+from utils import UpdateOneFaceData
+
+
+def checkFaceDataValidity(person, embedding, face_db):
+    """
+    Vérifie que la face data est correcte. Met à jour uniquement si nécessaire.
+    """
+    # Cas 1: Face data vide
+    if embedding is None or len(embedding) == 0:
+        print(f"Face data manquante pour {person}")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
+    # Cas 2: Conversion en numpy array impossible
+    try:
+        embedding = np.array(embedding)
+    except:
+        print(f"Face data invalide pour {person}")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
+    # Cas 3: Vérification du type de données
+    if not np.issubdtype(embedding.dtype, np.number):
+        print(f"Face data non numérique pour {person}")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
+    # Cas 4: Vérification de la longueur
+    if len(embedding) != 128:
+        print(f"Face data de longueur incorrecte pour {person}: {len(embedding)}")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
+    return True
+    
+
+
+
 
 # Fonction pour envoyer la présence à la DB
 def postStudentAttendanceDB(student_email: str, block_id: int, timestamp: str = None, status: str = 'Present'):
@@ -40,7 +86,7 @@ def getActiveClassStudentsFaceData(local):
     Récupère les données (face_data) des étudiants qui ont cours dans la classe donnée
     """
     try:
-        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()
+        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()        
         return response.data["block_id"], response.data["students"]
     
     except Exception as e:
@@ -111,6 +157,19 @@ supabase: Client = create_client(DB_URL, DB_KEY)
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
 print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")
 
+print("Vérification initiale des face data...")
+for person in face_db:
+    if not face_db[person] or len(face_db[person]) == 0:
+        print(f"Face data manquante pour {person}, mise à jour...")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+    else:
+        try:
+            checkFaceDataValidity(person, face_db[person][0], face_db)
+        except Exception as e:
+            print(f"Erreur lors de la vérification de {person}: {e}")
+print("Vérification terminée")
 # Récupérer les présences existantes pour le class_block_id
 existing_attendance = getAttendanceForBlock(block_id)
 
@@ -154,7 +213,7 @@ else:
         encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
 
         current_face_ids = {}
-
+        
         for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
             top, right, bottom, left = faceLoc
             top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
@@ -167,7 +226,7 @@ else:
                 for embedding in embeddings:
                     embedding = normalize(np.array(embedding))
                     distance = np.linalg.norm(encodeFace - embedding)
-
+                    
                     if distance < min_distance:
                         min_distance = distance
                         identified_person = person

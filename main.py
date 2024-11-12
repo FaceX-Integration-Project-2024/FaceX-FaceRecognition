@@ -8,30 +8,44 @@ from datetime import datetime, timezone, timedelta
 from utils import UpdateOneFaceData
 
 
-def checkFaceDataValidity(person, embedding) :
-    """"
-    Vérifie que la face data est correcte si non, renvoir la nouvelle face_Data genérer. si ok renvois True
+def checkFaceDataValidity(person, embedding, face_db):
     """
-    
-    try :
+    Vérifie que la face data est correcte. Met à jour uniquement si nécessaire.
+    """
+    # Cas 1: Face data vide
+    if embedding is None or len(embedding) == 0:
+        print(f"Face data manquante pour {person}")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
+    # Cas 2: Conversion en numpy array impossible
+    try:
         embedding = np.array(embedding)
-    except :
+    except:
+        print(f"Face data invalide pour {person}")
         faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
         return faceData
 
-    # Vérifie que tous les éléments sont des nombres
+    # Cas 3: Vérification du type de données
     if not np.issubdtype(embedding.dtype, np.number):
-        print(f"Face data de {person} à un soucis")
-        # tente de update
+        print(f"Face data non numérique pour {person}")
         faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
         return faceData
 
-    # Vérifie la longueur de l'embedding (attendu : 128)
-    if len(embedding) != 128:  # Changez ici si nécessaire
-        print(f"Face data de {person} à un soucis {len(embedding)}. Attendu : 128.")
-        # tente de update
+    # Cas 4: Vérification de la longueur
+    if len(embedding) != 128:
+        print(f"Face data de longueur incorrecte pour {person}: {len(embedding)}")
         faceData = UpdateOneFaceData(supabase, person)
-        return faceData 
+        if faceData:
+            face_db[person] = faceData
+        return faceData
+
     return True
     
 
@@ -143,15 +157,19 @@ supabase: Client = create_client(DB_URL, DB_KEY)
 block_id, face_db = getActiveClassStudentsFaceData(LOCAL)
 print(f"Vous êtes dans le local : {LOCAL} avec un block_id : {block_id}")
 
-# Check que lesface Data soit juste 
-for i in face_db :
-
-    try :
-        checkFaceDataValidity(i, face_db[i][0])
-    except :
-        faceData = UpdateOneFaceData(supabase, i)
-
-
+print("Vérification initiale des face data...")
+for person in face_db:
+    if not face_db[person] or len(face_db[person]) == 0:
+        print(f"Face data manquante pour {person}, mise à jour...")
+        faceData = UpdateOneFaceData(supabase, person)
+        if faceData:
+            face_db[person] = faceData
+    else:
+        try:
+            checkFaceDataValidity(person, face_db[person][0], face_db)
+        except Exception as e:
+            print(f"Erreur lors de la vérification de {person}: {e}")
+print("Vérification terminée")
 # Récupérer les présences existantes pour le class_block_id
 existing_attendance = getAttendanceForBlock(block_id)
 
@@ -195,7 +213,7 @@ else:
         encodesCurFrame = face_recognition.face_encodings(imgS, facesCurFrame)
 
         current_face_ids = {}
-
+        
         for face_index, (encodeFace, faceLoc) in enumerate(zip(encodesCurFrame, facesCurFrame)):
             top, right, bottom, left = faceLoc
             top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
@@ -207,15 +225,7 @@ else:
             for person, embeddings in face_db.items():
                 for embedding in embeddings:
                     embedding = normalize(np.array(embedding))
-
-                    # si erreur dans face data, il l'update
-                    try : 
-                        distance = np.linalg.norm(encodeFace - embedding)
-                    except :
-                        face_db[person] = checkFaceDataValidity(person, embedding)
-
-                        
-                    
+                    distance = np.linalg.norm(encodeFace - embedding)
                     
                     if distance < min_distance:
                         min_distance = distance

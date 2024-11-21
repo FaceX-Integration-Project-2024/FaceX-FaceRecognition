@@ -174,7 +174,7 @@ print("Vérification terminée")
 existing_attendance = getAttendanceForBlock(block_id)
 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 print("Webcam démarrée")
 
 if not cap.isOpened():

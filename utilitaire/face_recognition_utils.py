@@ -29,7 +29,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                 postStudentAttendanceDB(supabase, identified_person, block_id)
                 existing_attendance.add(identified_person)
             else:
-                print(f"{identified_person} déjà enregistré.")
+                print(f"{identified_person} déjà enregistré avec une distance de {min_distance:.2f}")
         else:
             print("Visage détecté mais non reconnu.")
 

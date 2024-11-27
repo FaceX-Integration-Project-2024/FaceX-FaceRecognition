@@ -1,6 +1,6 @@
 import numpy as np
 from face_recognition.validation import normalize
-
+import face_recognition
 def recognize_faces_in_frame(img, face_db, supabase, block_id, existing_attendance):
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)

@@ -9,7 +9,7 @@ from face_recognition.processing import recognize_faces_in_frame
 from face_recognition.validation import check_face_data_validity
 import cv2
 from datetime import datetime, timedelta
-
+import face_recognition
 def main():
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])

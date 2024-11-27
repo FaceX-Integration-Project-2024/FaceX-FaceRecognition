@@ -1,4 +1,4 @@
-from utils.image_processing import img_to_face_data
+from utilitaire.image_processing import img_to_face_data
 
 def update_face_data(supabase, email):
     """

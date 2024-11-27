@@ -1,10 +1,7 @@
-from utilitaire.image_processing import img_to_face_data
+from utilitaire.face_recognition_utils import studentsImgToFaceData
 
 def update_face_data(supabase, email):
-    """
-    Met à jour les données faciales d'un utilisateur en fonction de son email.
-    """
-    face_data = [img_to_face_data(supabase, email)]
+    face_data = [studentsImgToFaceData(supabase, email)]
     supabase.rpc('update_face_data', {
         "user_email": email,
         "new_face_data": face_data

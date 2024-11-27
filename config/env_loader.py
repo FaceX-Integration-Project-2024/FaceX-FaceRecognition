@@ -6,5 +6,5 @@ def load_env_variables():
     return {
         "DB_URL": os.getenv("DB_URL"),
         "DB_KEY": os.getenv("DB_KEY"),
-        "LOCAL": os.getenv("LOCAL")
+        "LOCAL": os.getenv("LOCAL"),
     }

@@ -11,9 +11,18 @@ def getAttendanceForBlock(supabase, class_block_id):
 def postStudentAttendanceDB(supabase, student_email, block_id, timestamp=None, status="Present"):
     if not timestamp:
         timestamp = datetime.now().isoformat()
-    supabase.rpc('post_new_attendance', {
-        "attendance_student_email": student_email,
-        "attendance_block_id": block_id,
-        "attendance_status": status,
-        "attendance_timestamp": timestamp
-    }).execute()
+    try:
+        response = supabase.rpc('post_new_attendance', {
+            "attendance_student_email": student_email,
+            "attendance_block_id": block_id,
+            "attendance_status": status,
+            "attendance_timestamp": timestamp
+        }).execute()
+
+        if response.data:
+            print(f"Présence enregistrée pour {student_email} (Block ID : {block_id}).")
+        else:
+            print(f"{student_email} était déjà enregistré pour ce bloc.")
+    except Exception as e:
+        print(f"Erreur lors de l'enregistrement de la présence pour {student_email} : {e}")
+

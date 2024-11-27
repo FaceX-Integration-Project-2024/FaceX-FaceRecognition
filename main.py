@@ -5,7 +5,7 @@ from database.supabase_client import create_supabase_client
 from database.attendance import getActiveClassStudentsFaceData, getAttendanceForBlock, postStudentAttendanceDB
 from utilitaire.face_data_utils import checkFaceDataValidity, normalize
 from utilitaire.face_recognition_utils import recognize_faces
-
+from database.face_data import update_face_data
 def main():
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
@@ -15,11 +15,23 @@ def main():
 
     print("Vérification initiale des face data...")
     for person in face_db:
-        checkFaceDataValidity(supabase, person, face_db[person][0], face_db)
-    print("Vérification terminée")
+        try:
+            is_valid = checkFaceDataValidity(supabase, person, face_db[person][0], face_db)
+            if not is_valid:
+                print(f"Les données faciales pour {person} sont invalides ou manquantes.")
+        except IndexError:
+            print(f"Données faciales manquantes pour {person}, tentative de mise à jour...")
+            face_data = update_face_data(supabase, person)
+            if face_data:
+                face_db[person] = face_data
+                print(f"Données faciales mises à jour pour {person}.")
+            else:
+                print(f"Échec de la mise à jour des données faciales pour {person}.")
+    print("Vérification terminée.")
+
 
     existing_attendance = getAttendanceForBlock(supabase, block_id)
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     print("Webcam démarrée")
 
     if not cap.isOpened():

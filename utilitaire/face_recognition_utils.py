@@ -1,18 +1,19 @@
 import cv2
 import numpy as np
 import face_recognition
-# from utilitaire.face_data_utils import normalize # pas importer sinon dépendances en boucle
 from database.attendance import postStudentAttendanceDB
 
 from PIL import Image
 import io
+def normalize(embedding):
+    return embedding / np.linalg.norm(embedding)
+
 def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
 
     faces_cur_frame = face_recognition.face_locations(img_resized)
     encodes_cur_frame = face_recognition.face_encodings(img_resized, faces_cur_frame)
-
     for encode_face in encodes_cur_frame:
         min_distance, identified_person = float("inf"), None
 
@@ -22,9 +23,15 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                 if distance < min_distance:
                     min_distance, identified_person = distance, person
 
-        if identified_person and identified_person not in existing_attendance:
-            postStudentAttendanceDB(supabase, identified_person, block_id)
-            existing_attendance.add(identified_person)
+        if identified_person:
+            if identified_person not in existing_attendance:
+                print(f"Visage reconnu : {identified_person} avec une distance de {min_distance:.2f}")
+                postStudentAttendanceDB(supabase, identified_person, block_id)
+                existing_attendance.add(identified_person)
+            else:
+                print(f"{identified_person} déjà enregistré.")
+        else:
+            print("Visage détecté mais non reconnu.")
 
 def studentsImgToFaceData(supabase, email):
     """

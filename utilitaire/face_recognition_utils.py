@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import face_recognition
-# from utilitaire.face_data_utils import normalize
+# from utilitaire.face_data_utils import normalize # pas importer sinon dépendances en boucle
 from database.attendance import postStudentAttendanceDB
 
 from PIL import Image

@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
 
 # python -m unittest .\tests\utilitaire\test_face_recognition_utils.py
+# python -m unittest .\tests\utilitaire\test_face_data_utils.py  
 
 '''
 => Ajouter des data au fichier data_test.json (code à rajouter dans le main.py) :

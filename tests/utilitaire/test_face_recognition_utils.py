@@ -2,11 +2,9 @@ from unittest import TestCase
 import cv2
 import numpy as np
 import json
-import copy
 from utilitaire.face_recognition_utils import recognize_faces, studentsImgToFaceData
 from database.supabase_client import create_supabase_client
 from config.env_loader import load_env_variables
-from utilitaire.face_data_utils import checkFaceDataValidity
 
 class Test_studentsImgToFaceData(TestCase):
     
@@ -50,12 +48,13 @@ class Test_recognize_faces(TestCase):
         self.supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
         self.block_id = "4"
         
+        # récup image de test
         with open(r"tests\test_data\img_gaetan.json", 'r') as file:
             content = file.read()
             img_data = json.loads(content) 
             self.img = np.array(img_data, dtype=np.uint8)
 
- 
+        #récup fake data pour les test
         with open(r"tests\test_data\data_test.json", 'r') as file:
             content = file.read()
             data = json.loads(content)

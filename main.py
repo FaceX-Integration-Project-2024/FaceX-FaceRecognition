@@ -52,8 +52,6 @@ def main():
             print("Erreur de lecture de la webcam.")
             break
 
-        print(existing_attendance)
-        break
         recognize_faces(img, face_db, existing_attendance, supabase, block_id)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):

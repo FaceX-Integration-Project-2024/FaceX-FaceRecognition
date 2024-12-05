@@ -18,7 +18,7 @@ def checkFaceDataValidity(supabase, person, embedding, face_db):
 
     # Vérifications de validité de l'embedding
     try:
-        embedding = np.array(face_db[person][0])  # Accès sécurisé
+        embedding = np.array(embedding)  # Accès sécurisé
     except Exception as e:
         print(f"Erreur lors de la conversion des données pour {person}: {e}")
         face_data = update_face_data(supabase, person)
@@ -39,7 +39,7 @@ def checkFaceDataValidity(supabase, person, embedding, face_db):
         if face_data:
             face_db[person] = face_data
         return False
-
+    
     return True
 
 

@@ -9,6 +9,14 @@ def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
 def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
+    """
+    retrouver les visage dans l'image. 
+    - S'il trouve personne : renvois False
+    - S'il trouve un visage pas dans existing_attendance : il le met présent dans la DB & retourne True
+    - S'il trouve un visage déja dans existing_attendance : il retourne None
+    
+    """
+
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
 
@@ -28,10 +36,13 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                 print(f"Visage reconnu : {identified_person} avec une distance de {min_distance:.2f}")
                 postStudentAttendanceDB(supabase, identified_person, block_id)
                 existing_attendance.add(identified_person)
+                return True
             else:
                 print(f"{identified_person} déjà enregistré avec une distance de {min_distance:.2f}")
+                return None
         else:
             print("Visage détecté mais non reconnu.")
+            return False
 
 def studentsImgToFaceData(supabase, email):
     """
@@ -41,6 +52,11 @@ def studentsImgToFaceData(supabase, email):
     try:
         # Récupérer l'image binaire depuis Supabase
         response = supabase.rpc('get_user_by_email', {"user_email": email}).execute()
+
+        if not response.data:  # Si aucun utilisateur n'est trouvé
+            print(f"Aucun utilisateur trouvé pour l'email {email}.")
+            return None  # Retourne None si l'email n'existe pas
+        
         matricule = response.data['matricule']
 
         binary_data = supabase.storage.from_("id-pictures").download(f'students/{matricule}.jpg')
@@ -63,4 +79,3 @@ def studentsImgToFaceData(supabase, email):
             return None
     except Exception as e:
         print(f"Erreur lors du traitement de l'image pour {email}: {e}")
-        return None

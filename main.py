@@ -6,12 +6,20 @@ from database.attendance import getActiveClassStudentsFaceData, getAttendanceFor
 from utilitaire.face_data_utils import checkFaceDataValidity, normalize
 from utilitaire.face_recognition_utils import recognize_faces
 from database.face_data import update_face_data
+import time
+
 def main():
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
 
     block_id, face_db = getActiveClassStudentsFaceData(supabase, env_vars['LOCAL'])
     print(f"Vous êtes dans le local : {env_vars['LOCAL']} avec un block_id : {block_id}")
+
+    if (face_db == None) :
+        print("Il y a pas cours dans ce local actuellement")
+        time.sleep(10)
+        main()
+        
 
     print("Vérification initiale des face data...")
     for person in face_db:

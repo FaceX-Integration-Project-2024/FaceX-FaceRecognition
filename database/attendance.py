@@ -1,12 +1,31 @@
 from datetime import datetime
 
 def getActiveClassStudentsFaceData(supabase, local):
-    response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()
-    return response.data["block_id"], response.data["students"]
+    try :
+        response = supabase.rpc("get_active_class_students_face_data", {"local_now": local}).execute()
+        return response.data["block_id"], response.data["students"]
+    
+    except ValueError as e :
+        print("Erreur supabase : soucis dans la requete vers supabase 'get_active_class_students_face_data'")
+        return None
+
+
+    
+
+    
 
 def getAttendanceForBlock(supabase, class_block_id):
-    response = supabase.rpc("get_attendance_for_class_block_python", {"class_block_id": int(class_block_id)}).execute()
-    return {attendance['student_email'] for attendance in response.data}
+    try :
+        response = supabase.rpc("get_attendance_for_class_block_python", {"class_block_id": int(class_block_id)}).execute()
+        return {attendance['student_email'] for attendance in response.data}
+    
+    except ValueError as e :
+        print("Erreur supabase : soucis dans la requete vers supabase 'get_attendance_for_class_block_python'")
+        return None
+    
+    
+    
+    
 
 def postStudentAttendanceDB(supabase, student_email, block_id, timestamp=None, status="Present"):
     if not timestamp:
@@ -24,5 +43,5 @@ def postStudentAttendanceDB(supabase, student_email, block_id, timestamp=None, s
         else:
             print(f"{student_email} était déjà enregistré pour ce bloc.")
     except Exception as e:
-        print(f"Erreur lors de l'enregistrement de la présence pour {student_email} : {e}")
+        print(f"Erreur supabase : soucis dans la requete vers supabase 'post_new_attendance' pour cet étudiant {student_email}")
 

@@ -2,19 +2,12 @@ import RPi.GPIO as GPIO
 import time
 
 # Configuration des broches GPIO
-# RS = 8
-# ENABLE = 9
-# D4 = 10
-# D5 = 11
-# D6 = 12
-# D7 = 13
-
-RS = 24
-ENABLE = 21
-D4 = 19
-D5 = 23
-D6 = 32
-D7 = 33
+RS = 8
+ENABLE = 9
+D4 = 10
+D5 = 11
+D6 = 12
+D7 = 13
 
 # Configuration des broches en sortie
 GPIO.setmode(GPIO.BCM)
@@ -90,6 +83,7 @@ try:
     lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
     lcd_write("Hello FaceX!")
     print("Message affiché : Hello FaceX!")
+    time.sleep(1)
 
     lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
     lcd_write("Bienvenue")

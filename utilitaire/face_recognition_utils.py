@@ -56,6 +56,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
             if identified_person not in existing_attendance:
                 print(f"Visage reconnu : {identified_person} avec une distance de {min_distance:.2f}")
                 lcdWrite({identified_person})
+                print("reconnu")
                 postStudentAttendanceDB(supabase, identified_person, block_id)
                 existing_attendance.add(identified_person)
                 return True

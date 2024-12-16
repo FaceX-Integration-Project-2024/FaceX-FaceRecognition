@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import face_recognition
 from database.attendance import postStudentAttendanceDB
-from lcd import lcd_init, lcd_set_cursor, lcd_write
+from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
 
 
 from PIL import Image

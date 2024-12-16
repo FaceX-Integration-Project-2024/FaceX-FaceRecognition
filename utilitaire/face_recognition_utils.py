@@ -2,9 +2,21 @@ import cv2
 import numpy as np
 import face_recognition
 from database.attendance import postStudentAttendanceDB
+from lcd import lcd_init, lcd_set_cursor, lcd_write
+
 
 from PIL import Image
 import io
+
+def lcdWrite(person):
+    lcd_init()
+
+    lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
+    lcd_write("Hello FaceX!")
+
+    lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
+    lcd_write(person)
+
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
 
@@ -34,6 +46,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
         if identified_person:
             if identified_person not in existing_attendance:
                 print(f"Visage reconnu : {identified_person} avec une distance de {min_distance:.2f}")
+                lcdWrite({identified_person})
                 postStudentAttendanceDB(supabase, identified_person, block_id)
                 existing_attendance.add(identified_person)
                 return True

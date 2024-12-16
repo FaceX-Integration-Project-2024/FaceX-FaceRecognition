@@ -76,3 +76,4 @@ print("ecran")
 
 lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
 lcd_write("Bienvenue")
+

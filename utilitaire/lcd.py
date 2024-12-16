@@ -20,6 +20,7 @@ GPIO.setup(D7, GPIO.OUT)
 
 # Fonction pour envoyer des données en 4 bits
 def lcd_send(data, is_command):
+    GPIO.setmode(GPIO.BCM)
     GPIO.output(RS, GPIO.LOW if is_command else GPIO.HIGH)  # Mode commande ou donnée
 
     # Envoi des bits hauts

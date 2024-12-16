@@ -2,12 +2,19 @@ import RPi.GPIO as GPIO
 import time
 
 # Configuration des broches GPIO
-RS = 8
-ENABLE = 9
-D4 = 10
-D5 = 11
-D6 = 12
-D7 = 13
+# RS = 8
+# ENABLE = 9
+# D4 = 10
+# D5 = 11
+# D6 = 12
+# D7 = 13
+
+RS = 24
+ENABLE = 21
+D4 = 19
+D5 = 23
+D6 = 32
+D7 = 33
 
 # Configuration des broches en sortie
 GPIO.setmode(GPIO.BCM)

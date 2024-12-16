@@ -9,13 +9,22 @@ from PIL import Image
 import io
 
 def lcdWrite(person):
+    
     lcd_init()
+    print("LCD initialisé.")
 
+    # Exemple d'affichage
     lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
     lcd_write("Hello FaceX!")
+    print("Message affiché : Hello FaceX!")
 
     lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
     lcd_write(person)
+    print("Message affiché : Bienvenue")
+    
+    # Nettoyer les broches GPIO en quittant
+    GPIO.cleanup()
+    print("GPIO nettoyées.")
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)

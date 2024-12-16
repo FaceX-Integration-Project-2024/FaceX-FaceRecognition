@@ -1,42 +1,51 @@
-from machine import Pin
+import RPi.GPIO as GPIO
 import time
 
-# Configuration des broches
-rs = Pin(8, Pin.OUT)
-enable = Pin(9, Pin.OUT)
-d4 = Pin(10, Pin.OUT)
-d5 = Pin(11, Pin.OUT)
-d6 = Pin(12, Pin.OUT)
-d7 = Pin(13, Pin.OUT)
+# Configuration des broches GPIO
+RS = 8
+ENABLE = 9
+D4 = 10
+D5 = 11
+D6 = 12
+D7 = 13
+
+# Configuration des broches en sortie
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(RS, GPIO.OUT)
+GPIO.setup(ENABLE, GPIO.OUT)
+GPIO.setup(D4, GPIO.OUT)
+GPIO.setup(D5, GPIO.OUT)
+GPIO.setup(D6, GPIO.OUT)
+GPIO.setup(D7, GPIO.OUT)
 
 # Fonction pour envoyer des données en 4 bits
 def lcd_send(data, is_command):
-    rs.value(0 if is_command else 1)  # Mode commande ou donnée
+    GPIO.output(RS, GPIO.LOW if is_command else GPIO.HIGH)  # Mode commande ou donnée
 
     # Envoi des bits hauts
-    d4.value((data >> 4) & 0x01)
-    d5.value((data >> 5) & 0x01)
-    d6.value((data >> 6) & 0x01)
-    d7.value((data >> 7) & 0x01)
+    GPIO.output(D4, (data >> 4) & 0x01)
+    GPIO.output(D5, (data >> 5) & 0x01)
+    GPIO.output(D6, (data >> 6) & 0x01)
+    GPIO.output(D7, (data >> 7) & 0x01)
     lcd_toggle_enable()
 
     # Envoi des bits bas
-    d4.value(data & 0x01)
-    d5.value((data >> 1) & 0x01)
-    d6.value((data >> 2) & 0x01)
-    d7.value((data >> 3) & 0x01)
+    GPIO.output(D4, data & 0x01)
+    GPIO.output(D5, (data >> 1) & 0x01)
+    GPIO.output(D6, (data >> 2) & 0x01)
+    GPIO.output(D7, (data >> 3) & 0x01)
     lcd_toggle_enable()
 
 # Fonction pour activer la broche Enable
 def lcd_toggle_enable():
-    enable.value(1)
-    time.sleep_us(1)  # Pause pour signaler la commande
-    enable.value(0)
-    time.sleep_us(50)  # Délai d'attente
+    GPIO.output(ENABLE, GPIO.HIGH)
+    time.sleep(0.000001)  # Pause pour signaler la commande (1 microseconde)
+    GPIO.output(ENABLE, GPIO.LOW)
+    time.sleep(0.00005)  # Délai d'attente (50 microsecondes)
 
 # Initialisation de l'écran LCD
 def lcd_init():
-    time.sleep(0.05)
+    time.sleep(0.05)  # Pause après l'allumage
 
     # Initialisation en mode 4 bits
     lcd_send(0x03, True)
@@ -53,7 +62,7 @@ def lcd_init():
 # Effacer l'écran
 def lcd_clear():
     lcd_send(0x01, True)
-    time.sleep_ms(2)
+    time.sleep(0.002)  # Délai d'attente (2 millisecondes)
 
 # Positionner le curseur
 def lcd_set_cursor(line, column):
@@ -66,14 +75,20 @@ def lcd_write(message):
         lcd_send(ord(char), False)
 
 # Programme principal
-lcd_init()
-print("init")
+try:
+    lcd_init()
+    print("LCD initialisé.")
 
-# Exemple d'affichage
-lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
-lcd_write("Hello FaceX!")
-print("ecran")
+    # Exemple d'affichage
+    lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
+    lcd_write("Hello FaceX!")
+    print("Message affiché : Hello FaceX!")
 
-lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
-lcd_write("Bienvenue")
-
+    lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
+    lcd_write("Bienvenue")
+    print("Message affiché : Bienvenue")
+    
+finally:
+    # Nettoyer les broches GPIO en quittant
+    GPIO.cleanup()
+    print("GPIO nettoyées.")

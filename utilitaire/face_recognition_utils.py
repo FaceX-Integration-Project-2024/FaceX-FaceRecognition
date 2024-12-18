@@ -69,7 +69,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                     if distance < min_distance:  # Trouve la plus petite distance
                         min_distance, identified_person = distance, person
 
-            if min_distance < 0.6:  # Seuil pour considérer un visage comme reconnu
+            if min_distance < 0.65:  # Seuil pour considérer un visage comme reconnu
                 print(f"Visage reconnu : {identified_person} avec une distance de {min_distance}")
                 student_name = f"{face_db[identified_person]['first_name']} {face_db[identified_person]['last_name']}"
                 print(f"Nom de l'étudiant : {student_name}")

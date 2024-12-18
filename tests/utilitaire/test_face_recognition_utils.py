@@ -65,13 +65,13 @@ class Test_recognize_faces(TestCase):
 
         empty_existing_attendance = {'rien@test.com'}
 
-        # Vérifie s'il arrive bien à retrouve le visage et le met présent
+        # Vérifie s'il arrive bien à retrouver le visage et le met présent
         self.assertTrue(recognize_faces(self.img, self.face_db, empty_existing_attendance, self.supabase, self.block_id), 'Test_recognize_faces : n\'arrive plus à trouver le visage dans l\'image')
     
 
     def test_recognize_faces_déja_enregisté(self):
 
-        # Vérifie s'il arrive bien à retrouve le visage et à savoir qu'il à déja été enregisté dans la existing_attendance
+        # Vérifie s'il arrive bien à retrouver le visage et à savoir qu'il à déja été enregisté dans la existing_attendance
         self.assertIsNone(recognize_faces(self.img, self.face_db, self.existing_attendance, self.supabase, self.block_id), 'Test_recognize_faces : n\'arrive plus à voir que le visage est déja enregisté')
 
 
@@ -81,7 +81,7 @@ class Test_recognize_faces(TestCase):
         noisy_img = cv2.add(self.img.astype('int16'), noise)
         noisy_img = np.clip(noisy_img, 0, 255).astype('uint8')
 
-        # Vérifie s'il arrive bien à retrouve le visage et à savoir qu'il à déja été enregisté dans la existing_attendance
+        # Vérifie s'il arrive bien à retrouver le visage et à savoir qu'il à déja été enregisté dans la existing_attendance
         self.assertFalse(recognize_faces(noisy_img, self.face_db, self.existing_attendance, self.supabase, self.block_id), 'Test_recognize_faces : Ne doit trouver personne')
 
 

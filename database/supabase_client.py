@@ -10,3 +10,4 @@ def create_supabase_client(url, key):
     except Exception as e:
         print(f"Erreur lors de la création du client supabase : {e}")
         raise
+

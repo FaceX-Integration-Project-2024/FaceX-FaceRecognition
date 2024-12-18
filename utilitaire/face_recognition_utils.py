@@ -26,6 +26,16 @@ def lcd(person):
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
+def get_student_name(supabase, email):
+    response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
+    
+
+    if response.data and "first_name" in response.data and "last_name" in response.data:
+        return f"{response.data['first_name']} {response.data['last_name']}"
+    else:
+        return "Inconnu"
+
+
 
 def get_student_name(supabase, email):
     response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
@@ -67,12 +77,14 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                         min_distance, identified_person = distance, person
 
             if min_distance < 0.65:  # Seuil pour considérer un visage comme reconnu
+
                 print(f"Visage reconnu : {identified_person} avec une distance de {min_distance}")
                 student_name = f"{face_db[identified_person]['first_name']} {face_db[identified_person]['last_name']}"
                 print(f"Nom de l'étudiant : {student_name}")
                 if identified_person not in existing_attendance:
                     postStudentAttendanceDB(supabase, identified_person, block_id)
                     existing_attendance.add(identified_person)
+
                     lcd(str(student_name))
                     return True
                 else:
@@ -82,13 +94,12 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
             else:
                 print("Visage détecté mais non reconnu.")
                 return False
+
     except Exception as e:
         print(f"Erreur lors de la reconnaissance des visages : {e}")
         return False
 
-                
-
-
+              
 def studentsImgToFaceData(supabase, email):
     """
     Récupère les données faciales d'un étudiant à partir de son email.

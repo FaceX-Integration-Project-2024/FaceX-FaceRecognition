@@ -12,7 +12,6 @@ import time
 def get_student_name(supabase, email):
     response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
     
-
     if response.data and "first_name" in response.data and "last_name" in response.data:
         return f"{response.data['first_name']} {response.data['last_name']}"
     else:
@@ -51,39 +50,51 @@ def main():
             print(f"Clé manquante pour {email}: {e}")
         except Exception as e:
             print(f"Erreur inattendue pour {email}: {e}")
-
     print("Vérification terminée.")
 
 
 
     existing_attendance = getAttendanceForBlock(supabase, block_id)
-    cap = cv2.VideoCapture(0)
-    print("Webcam démarrée")
-
-    if not cap.isOpened():
-        print("Erreur : Impossible d'accéder à la webcam")
+    
+    try:
+        cam = cv2.VideoCapture(0)
+        
+        if not cam.isOpened():
+            raise Exception("Impossible d'accéder à la camera")
+        print("Webcam démarrée")
+    except Exception as e:
+        print(f"Erreur avec la camera : {e}")
         return
 
     last_block_check_time = datetime.now()
     block_change_check_interval = timedelta(minutes=5)
 
     while True:
-        if datetime.now() - last_block_check_time > block_change_check_interval:
-            block_id = getActiveClassStudentsFaceData(supabase, env_vars['LOCAL'])[0]
-            existing_attendance = getAttendanceForBlock(supabase, block_id)
-            last_block_check_time = datetime.now()
+        try :
+            if datetime.now() - last_block_check_time > block_change_check_interval:
+                block_id = getActiveClassStudentsFaceData(supabase, env_vars['LOCAL'])[0]
+                existing_attendance = getAttendanceForBlock(supabase, block_id)
+                last_block_check_time = datetime.now()
 
-        success, img = cap.read()
-        if not success:
-            print("Erreur de lecture de la webcam.")
+            try :
+                success, img = cam.read()
+                if not success:
+                    print("Erreur de lecture de la webcam.")
+                    raise SystemError('Erreur de lecture de la webcam.')
+            except SystemError as e :
+                print(f"Erreur avec la camera : {e}")
+                break
+
+            recognize_faces(img, face_db, existing_attendance, supabase, block_id)
+
+        except Exception as e :
+            print(f"Erreur lors du traitement de l'image ou de la reconnaissance faciale : {e}")
             break
-
-        recognize_faces(img, face_db, existing_attendance, supabase, block_id)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+                break
 
-    cap.release()
+    cam.release()
 
 if __name__ == "__main__":
     main()

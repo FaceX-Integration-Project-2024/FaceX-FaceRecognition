@@ -8,7 +8,7 @@ from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
 from PIL import Image
 import io
 
-def lcdWrite(person):
+def lcd(person):
     
     lcd_init()
     print("LCD initialisé.")
@@ -20,7 +20,7 @@ def lcdWrite(person):
 
     # lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
     lcd_write(person)
-    print("Message affiché : Bienvenue")
+    print("Message affiché : personne")
     
     # Nettoyer les broches GPIO en quittant
     GPIO.cleanup()
@@ -60,7 +60,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                 return True
             else:
                 print(f"{identified_person} déjà enregistré avec une distance de {min_distance:.2f}")
-                lcdWrite({identified_person})
+                lcd(str(identified_person))
                 print("reconnu")
                 return None
         else:

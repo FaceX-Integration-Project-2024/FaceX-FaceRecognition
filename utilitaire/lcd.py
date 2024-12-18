@@ -10,7 +10,6 @@ D6 = 12
 D7 = 13
 
 # Configuration des broches en sortie
-GPIO.setmode(GPIO.BCM)
 GPIO.setup(RS, GPIO.OUT)
 GPIO.setup(ENABLE, GPIO.OUT)
 GPIO.setup(D4, GPIO.OUT)

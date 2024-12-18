@@ -11,6 +11,7 @@ import RPi.GPIO as GPIO
 import time
 
 def main():
+    GPIO.setmode(GPIO.BCM)
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
 

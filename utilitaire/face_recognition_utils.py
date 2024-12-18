@@ -2,27 +2,27 @@ import cv2
 import numpy as np
 import face_recognition
 from database.attendance import postStudentAttendanceDB
-from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
-import RPi.GPIO as GPIO
+#from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
+#import RPi.GPIO as GPIO
 
 
 from PIL import Image
 import io
 
-def lcd(person):
+# def lcd(person):
     
-    lcd_init()
+#     lcd_init()
 
-    # # Exemple d'affichage
-    # lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
-    # lcd_write("Hello FaceX!")
-    # print("Message affiché : Hello FaceX!")
+#     # # Exemple d'affichage
+#     # lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
+#     # lcd_write("Hello FaceX!")
+#     # print("Message affiché : Hello FaceX!")
 
-    # lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
-    lcd_write(person)
+#     # lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
+#     lcd_write(person)
     
-    # Nettoyer les broches GPIO en quittant
-    GPIO.cleanup()
+#     # Nettoyer les broches GPIO en quittant
+#     GPIO.cleanup()
 
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
@@ -85,11 +85,11 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                     postStudentAttendanceDB(supabase, identified_person, block_id)
                     existing_attendance.add(identified_person)
 
-                    lcd(str(student_name))
+                    # lcd(str(student_name))
                     return True
                 else:
                     print(f"{student_name} déjà enregistré avec une distance de {min_distance}")
-                    lcd(str(student_name))
+                    # lcd(str(student_name))
                     return None
             else:
                 print("Visage détecté mais non reconnu.")

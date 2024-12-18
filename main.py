@@ -6,8 +6,16 @@ from database.attendance import getActiveClassStudentsFaceData, getAttendanceFor
 from utilitaire.face_data_utils import checkFaceDataValidity, normalize
 from utilitaire.face_recognition_utils import recognize_faces
 from database.face_data import update_face_data
+from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
+import RPi.GPIO as GPIO
 import time
-
+def get_student_name(supabase, email):
+    response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
+    
+    if response.data and "first_name" in response.data and "last_name" in response.data:
+        return f"{response.data['first_name']} {response.data['last_name']}"
+    else:
+        return "Inconnu"
 def main():
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
@@ -22,21 +30,27 @@ def main():
         
 
     print("Vérification initiale des face data...")
-    for person in face_db:
+    for email in face_db:
+        # print(f"Vérification des données pour {email}: {face_db[email]}")
         try:
-            is_valid = checkFaceDataValidity(supabase, person, face_db[person][0], face_db)
-            if not is_valid:
-                print(f"Les données faciales pour {person} sont invalides ou manquantes.")
-        except IndexError:
-            print(f"Données faciales manquantes pour {person}, tentative de mise à jour...")
-            face_data = update_face_data(supabase, person)
-            if face_data:
-                face_db[person] = face_data
-                print(f"Données faciales mises à jour pour {person}.")
-            else:
-                print(f"Échec de la mise à jour des données faciales pour {person}.")
-    print("Vérification terminée.")
+            student_name = f"{face_db[email]['first_name']} {face_db[email]['last_name']}"
+            face_data = face_db[email].get("face_data")
 
+            if not face_data or len(face_data) == 0:
+                print(f"Aucune donnée faciale trouvée pour {student_name}. Tentative de mise à jour...")
+                updated_face_data = update_face_data(supabase, email)
+                if updated_face_data:
+                    face_db[email]["face_data"] = updated_face_data
+                    print(f"Données faciales mises à jour pour {student_name}.")
+                else:
+                    print(f"Échec de la mise à jour des données faciales pour {student_name}.")
+            else:
+                print(f"Données faciales déjà présentes pour {student_name}.")
+        except KeyError as e:
+            print(f"Clé manquante pour {email}: {e}")
+        except Exception as e:
+            print(f"Erreur inattendue pour {email}: {e}")
+    print("Vérification terminée.")
 
     existing_attendance = getAttendanceForBlock(supabase, block_id)
     

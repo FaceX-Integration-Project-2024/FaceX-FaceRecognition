@@ -64,7 +64,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
 
                 for embedding in embeddings:
                     distance = np.linalg.norm(encode_face - normalize(np.array(embedding)))
-                    print(f"Distance calculée pour {person}: {distance}")
+                    #print(f"Distance calculée pour {person}: {distance}")
 
                     if distance < min_distance:  # Trouve la plus petite distance
                         min_distance, identified_person = distance, person
@@ -76,6 +76,7 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
                 if identified_person not in existing_attendance:
                     postStudentAttendanceDB(supabase, identified_person, block_id)
                     existing_attendance.add(identified_person)
+                    lcd(str(student_name))
                     return True
                 else:
                     print(f"{student_name} déjà enregistré avec une distance de {min_distance}")

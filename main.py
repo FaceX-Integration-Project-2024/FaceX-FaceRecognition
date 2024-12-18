@@ -52,8 +52,6 @@ def main():
             print(f"Erreur inattendue pour {email}: {e}")
     print("Vérification terminée.")
 
-
-
     existing_attendance = getAttendanceForBlock(supabase, block_id)
     
     try:

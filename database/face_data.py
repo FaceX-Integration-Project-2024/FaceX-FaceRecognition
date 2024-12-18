@@ -4,7 +4,9 @@ def update_face_data(supabase, email):
     face_data = [studentsImgToFaceData(supabase, email)]
     
     try:
+
         print(f"Données faciales pour {email} avant mise à jour : {face_data}")
+
         response = supabase.rpc('update_face_data', {
             "user_email": email,
             "new_face_data": face_data

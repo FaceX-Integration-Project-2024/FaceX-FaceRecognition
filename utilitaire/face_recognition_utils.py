@@ -57,7 +57,6 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
     try :
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_resized = cv2.resize(img_rgb, (0, 0), None, 0.5, 0.5)
-
         faces_cur_frame = face_recognition.face_locations(img_resized)
         encodes_cur_frame = face_recognition.face_encodings(img_resized, faces_cur_frame)
         for encode_face in encodes_cur_frame:
@@ -94,7 +93,6 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
             else:
                 print("Visage détecté mais non reconnu.")
                 return False
-
     except Exception as e:
         print(f"Erreur lors de la reconnaissance des visages : {e}")
         return False

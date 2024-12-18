@@ -10,15 +10,13 @@ D6 = 12
 D7 = 13
 
 # Configuration des broches en sortie
+GPIO.setmode(GPIO.BCM)
 GPIO.setup(RS, GPIO.OUT)
 GPIO.setup(ENABLE, GPIO.OUT)
 GPIO.setup(D4, GPIO.OUT)
 GPIO.setup(D5, GPIO.OUT)
 GPIO.setup(D6, GPIO.OUT)
 GPIO.setup(D7, GPIO.OUT)
-
-assert GPIO.gpio_function(RS) == GPIO.OUT, "RS n'est pas configuré comme OUTPUT"
-assert GPIO.gpio_function(ENABLE) == GPIO.OUT, "ENABLE n'est pas configuré comme OUTPUT"
 
 # Fonction pour envoyer des données en 4 bits
 def lcd_send(data, is_command):
@@ -47,6 +45,14 @@ def lcd_toggle_enable():
 
 # Initialisation de l'écran LCD
 def lcd_init():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(RS, GPIO.OUT)
+    GPIO.setup(ENABLE, GPIO.OUT)
+    GPIO.setup(D4, GPIO.OUT)
+    GPIO.setup(D5, GPIO.OUT)
+    GPIO.setup(D6, GPIO.OUT)
+    GPIO.setup(D7, GPIO.OUT)
+    
     time.sleep(0.05)  # Pause après l'allumage
 
     # Initialisation en mode 4 bits

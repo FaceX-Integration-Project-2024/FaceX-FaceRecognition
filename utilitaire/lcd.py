@@ -74,8 +74,16 @@ def lcd_set_cursor(line, column):
 
 # Fonction pour afficher un texte
 def lcd_write(message):
-    for char in message:
-        lcd_send(ord(char), False)
+    if not isinstance(message, str):
+        raise ValueError(f"lcd_write() attend une chaîne, mais a reçu : {type(message)}")
+    
+    max_length = 16 
+    lines = [message[i:i + max_length] for i in range(0, len(message), max_length)]
+
+    for i, line in enumerate(lines):
+        lcd_set_cursor(i, 0) 
+        for char in line:
+            lcd_send(ord(char), False)
 
 # # Programme principal
 # try:

@@ -13,12 +13,12 @@ def lcdWrite(person):
     lcd_init()
     print("LCD initialisé.")
 
-    # Exemple d'affichage
-    lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
-    lcd_write("Hello FaceX!")
-    print("Message affiché : Hello FaceX!")
+    # # Exemple d'affichage
+    # lcd_set_cursor(0, 0)  # Ligne 1, colonne 0
+    # lcd_write("Hello FaceX!")
+    # print("Message affiché : Hello FaceX!")
 
-    lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
+    # lcd_set_cursor(1, 0)  # Ligne 2, colonne 0
     lcd_write(person)
     print("Message affiché : Bienvenue")
     

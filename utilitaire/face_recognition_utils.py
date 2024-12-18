@@ -7,6 +7,16 @@ from PIL import Image
 import io
 def normalize(embedding):
     return embedding / np.linalg.norm(embedding)
+def get_student_name(supabase, email):
+    response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
+    
+
+    if response.data and "first_name" in response.data and "last_name" in response.data:
+        return f"{response.data['first_name']} {response.data['last_name']}"
+    else:
+        return "Inconnu"
+
+
 
 def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
     """
@@ -25,24 +35,35 @@ def recognize_faces(img, face_db, existing_attendance, supabase, block_id):
         for encode_face in encodes_cur_frame:
             min_distance, identified_person = float("inf"), None
 
-            for person, embeddings in face_db.items():
+            for person, data in face_db.items():
+                embeddings = data.get("face_data")
+                if not embeddings:
+                    print(f"Pas de données faciales pour {person}.")
+                    continue
+
                 for embedding in embeddings:
                     distance = np.linalg.norm(encode_face - normalize(np.array(embedding)))
-                    if distance < min_distance:
+                    #print(f"Distance calculée pour {person}: {distance}")
+
+                    if distance < min_distance:  # Trouve la plus petite distance
                         min_distance, identified_person = distance, person
 
-            if identified_person:
+            if min_distance < 0.6:  # Seuil pour considérer un visage comme reconnu
+                print(f"Visage reconnu : {identified_person} avec une distance de {min_distance}")
+                student_name = f"{face_db[identified_person]['first_name']} {face_db[identified_person]['last_name']}"
+                print(f"Nom de l'étudiant : {student_name}")
                 if identified_person not in existing_attendance:
-                    print(f"Visage reconnu : {identified_person} avec une distance de {min_distance:.2f}")
                     postStudentAttendanceDB(supabase, identified_person, block_id)
                     existing_attendance.add(identified_person)
                     return True
                 else:
-                    print(f"{identified_person} déjà enregistré avec une distance de {min_distance:.2f}")
+                    print(f"{student_name} déjà enregistré avec une distance de {min_distance}")
                     return None
             else:
                 print("Visage détecté mais non reconnu.")
                 return False
+
+
     except Exception as e:
         print(f"Erreur lors de la reconnaissance des visages : {e}")
         return False

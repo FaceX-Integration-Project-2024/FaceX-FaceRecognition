@@ -10,8 +10,8 @@ def update_face_data(supabase, email):
         }).execute()
 
         # Access the error and status correctly
-        if response.get("error"):  # Use .get() to safely check for "error" key
-            raise Exception(f"Erreur lors de la mise à jour des données faciales : {response['error']}")
+        if 'error' in response or response.get('data') is None:  
+            raise Exception(f"Erreur lors de la mise à jour des données faciales : {response.get('error', 'Unknown error')}")
 
         return face_data
 

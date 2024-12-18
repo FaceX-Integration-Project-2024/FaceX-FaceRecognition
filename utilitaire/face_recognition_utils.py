@@ -3,6 +3,7 @@ import numpy as np
 import face_recognition
 from database.attendance import postStudentAttendanceDB
 from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
+import RPi.GPIO as GPIO
 
 
 from PIL import Image

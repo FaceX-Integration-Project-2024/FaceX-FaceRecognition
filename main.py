@@ -7,6 +7,7 @@ from utilitaire.face_data_utils import checkFaceDataValidity, normalize
 from utilitaire.face_recognition_utils import recognize_faces
 from database.face_data import update_face_data
 from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
+import RPi.GPIO as GPIO
 import time
 
 def main():

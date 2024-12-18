@@ -44,4 +44,3 @@ def postStudentAttendanceDB(supabase, student_email, block_id, timestamp=None, s
             print(f"{student_email} était déjà enregistré pour ce bloc.")
     except Exception as e:
         print(f"Erreur supabase : soucis dans la requete vers supabase 'post_new_attendance' pour cet étudiant {student_email}")
-

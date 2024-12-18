@@ -18,4 +18,3 @@ def update_face_data(supabase, email):
     except Exception as e:
         print(f"Erreur lors de l'exécution de la procédure stockée pour {email}: {e}")
         return None
-

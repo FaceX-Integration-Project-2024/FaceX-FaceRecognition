@@ -6,17 +6,16 @@ from database.attendance import getActiveClassStudentsFaceData, getAttendanceFor
 from utilitaire.face_data_utils import checkFaceDataValidity, normalize
 from utilitaire.face_recognition_utils import recognize_faces
 from database.face_data import update_face_data
+from utilitaire.lcd import lcd_init, lcd_set_cursor, lcd_write
+import RPi.GPIO as GPIO
 import time
 def get_student_name(supabase, email):
     response = supabase.rpc("get_user_by_email", {"user_email": email}).execute()
     
-
     if response.data and "first_name" in response.data and "last_name" in response.data:
         return f"{response.data['first_name']} {response.data['last_name']}"
     else:
         return "Inconnu"
-
-
 def main():
     env_vars = load_env_variables()
     supabase = create_supabase_client(env_vars['DB_URL'], env_vars['DB_KEY'])
@@ -51,11 +50,8 @@ def main():
             print(f"Clé manquante pour {email}: {e}")
         except Exception as e:
             print(f"Erreur inattendue pour {email}: {e}")
-
-
-
-
     print("Vérification terminée.")
+
 
 
     existing_attendance = getAttendanceForBlock(supabase, block_id)
